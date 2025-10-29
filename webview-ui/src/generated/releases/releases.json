@@ -1,0 +1,286 @@
+{
+  "currentVersion": "4.111.2",
+  "releases": [
+    {
+      "version": "4.111.2",
+      "changes": [
+        {
+          "description": "Various improvements to the autocomplete functionality",
+          "category": "improvement",
+          "prNumber": 3363,
+          "commitHash": "233334c",
+          "author": "markijbema"
+        }
+      ]
+    },
+    {
+      "version": "4.111.1",
+      "changes": [
+        {
+          "description": "Improved handling of tool calls in the API conversation history",
+          "category": "improvement",
+          "prNumber": 3282,
+          "commitHash": "ed4399b",
+          "author": "chrarnoldus"
+        },
+        {
+          "description": "Claude Haiku 4.5 now uses a simplified read file tool for reduced error rate",
+          "category": "fix",
+          "prNumber": 3270,
+          "commitHash": "2b35053",
+          "author": "chrarnoldus"
+        }
+      ]
+    },
+    {
+      "version": "4.111.0",
+      "changes": [
+        {
+          "description": "Switched autocomplete to showing completions inline",
+          "category": "other",
+          "prNumber": 3256,
+          "commitHash": "f81b48b",
+          "author": "markijbema"
+        },
+        {
+          "description": "Improve native tool calling consistency",
+          "category": "improvement",
+          "prNumber": 3261,
+          "commitHash": "bae048f",
+          "author": "mcowger"
+        },
+        {
+          "description": "Fix broken sign-in links",
+          "category": "fix",
+          "prNumber": 3281,
+          "commitHash": "2586e9b",
+          "author": "hassoncs"
+        },
+        {
+          "description": "Running commands are no longer sometimes shown twice in the chat",
+          "category": "other",
+          "prNumber": 3313,
+          "commitHash": "2e61e91",
+          "author": "chrarnoldus"
+        }
+      ]
+    },
+    {
+      "version": "4.110.0",
+      "changes": [
+        {
+          "description": "Remove credit status bar until we can retrieve the up to date balance from the proxy response.",
+          "category": "other",
+          "prNumber": 3249,
+          "commitHash": "ccee64c",
+          "author": "chrarnoldus"
+        },
+        {
+          "description": "Fixed some \"not a function\" crashes",
+          "category": "fix",
+          "prNumber": 3235,
+          "commitHash": "0108896",
+          "author": "chrarnoldus"
+        },
+        {
+          "description": "Reverted \"Update base URL for Vertex Anthropic models to work around outdated library.\" because it is causing issues for some users.",
+          "category": "fix",
+          "prNumber": 3226,
+          "commitHash": "e13a99c",
+          "author": "chrarnoldus"
+        },
+        {
+          "description": "Fix listCodeDefinitionNamesTool for annotated Java methods",
+          "category": "fix",
+          "prNumber": 2663,
+          "commitHash": "43140c9",
+          "author": "NaccOll"
+        },
+        {
+          "description": "Improved support for HTTP proxy environment variables",
+          "category": "feature",
+          "prNumber": 3242,
+          "commitHash": "8604c83",
+          "author": "chrarnoldus"
+        }
+      ]
+    },
+    {
+      "version": "4.109.2",
+      "changes": [
+        {
+          "description": "Do not accept an autocomplete suggestion with shift-tab or ctrl-tab (only plain tab)",
+          "category": "other",
+          "prNumber": 3216,
+          "commitHash": "3f34635",
+          "author": "markijbema"
+        },
+        {
+          "description": "Update Synthetic Provider to support GLM 4.6, and enable native tool calling",
+          "category": "improvement",
+          "prNumber": 3214,
+          "commitHash": "b271af9",
+          "author": "mcowger"
+        },
+        {
+          "description": "Improve Chinese translation of autocomplete-related terms",
+          "category": "improvement",
+          "prNumber": 3199,
+          "commitHash": "14bbc5f",
+          "author": "possible055"
+        }
+      ]
+    },
+    {
+      "version": "4.109.1",
+      "changes": [
+        {
+          "description": "Fix Z.ai provider giving an Unauthorized error",
+          "category": "fix",
+          "prNumber": 3203,
+          "commitHash": "aeb8bf3",
+          "author": "chrarnoldus"
+        }
+      ]
+    },
+    {
+      "version": "4.109.0",
+      "changes": [
+        {
+          "description": "Update base URL for Vertex Anthropic models to work around outdated library.",
+          "category": "improvement",
+          "prNumber": 3088,
+          "commitHash": "84a1fa3",
+          "author": "mcowger"
+        },
+        {
+          "description": "Fix bug: autocomplete no longer suggests strange XML",
+          "category": "fix",
+          "prNumber": 3192,
+          "commitHash": "7015c23",
+          "author": "markijbema"
+        },
+        {
+          "description": "Include changes from Roo Code v3.28.18 - Fix: Remove request content from UI messages to improve performance and reduce clutter (#5601 by @MuriloFP, #8594 by @multivac2x, #8690 by @hannesrudolph, PR by @mrubens) - Fix: Add userAgent to Bedrock client for version tracking (#8660 by @ajjuaire, PR by @app/roomote) - Feat: Z AI now uses only two coding endpoints for better performance (#8687 by @hannesrudolph) - Feat: Update image generation model selection for improved quality (thanks @chrarnoldus!)",
+          "category": "feature",
+          "prNumber": 3159,
+          "commitHash": "935bbae",
+          "author": "kevinvandijk"
+        },
+        {
+          "description": "Do not trigger autocomplete for external events, like git changes",
+          "category": "other",
+          "prNumber": 3194,
+          "commitHash": "b566965",
+          "author": "markijbema"
+        },
+        {
+          "description": "Added Amazon Bedrock as a provider for autocomplete",
+          "category": "feature",
+          "prNumber": 3100,
+          "commitHash": "3e409b8",
+          "author": "markijbema"
+        },
+        {
+          "description": "Jetbrains - Update framework (Plugin now requires IntelliJ IDEA 2024.3 or later)",
+          "category": "improvement",
+          "prNumber": 3149,
+          "commitHash": "79c7d60",
+          "author": "catrielmuller"
+        },
+        {
+          "description": "Fixed crash when browser tool is used with native tool calling enabled",
+          "category": "fix",
+          "prNumber": 3195,
+          "commitHash": "93371d0",
+          "author": "chrarnoldus"
+        }
+      ]
+    },
+    {
+      "version": "4.108.0",
+      "changes": [
+        {
+          "description": "add send message on enter setting with configurable behavior",
+          "category": "feature",
+          "prNumber": 2674,
+          "commitHash": "2836aed",
+          "author": "mcowger"
+        },
+        {
+          "description": "Allow the use of native function calling for OpenAI-compatible, LM Studio, Chutes, DeepInfra, xAI and Z.ai providers.",
+          "category": "other",
+          "prNumber": 3090,
+          "commitHash": "261889f",
+          "author": "mcowger"
+        },
+        {
+          "description": "Improved the Chinese translation of \"run\" from '命令' to '运行'",
+          "category": "improvement",
+          "prNumber": 3155,
+          "commitHash": "6242b03",
+          "author": "NikoDi2000"
+        },
+        {
+          "description": "The apply_diff tool was implemented for experimental JSON-style tool calling",
+          "category": "other",
+          "prNumber": 3120,
+          "commitHash": "ced4857",
+          "author": "mcowger"
+        }
+      ]
+    },
+    {
+      "version": "4.107.0",
+      "changes": [
+        {
+          "description": "The \"Enable browser tool\" setting is now honored when using experimental JSON style tool calls.",
+          "category": "other",
+          "prNumber": 3082,
+          "commitHash": "d82e684",
+          "author": "chrarnoldus"
+        },
+        {
+          "description": "Fix bug preventing the agent from editing files properly when git diff views are open",
+          "category": "fix",
+          "prNumber": 3059,
+          "commitHash": "d71f1d6",
+          "author": "hassoncs"
+        },
+        {
+          "description": "Fix button styling on Let's Go CTA",
+          "category": "fix",
+          "prNumber": 3105,
+          "commitHash": "b0c7475",
+          "author": "metju90"
+        },
+        {
+          "description": "Include changes from Roo Code v3.28.16-v3.28.17 - Fix: Update zh-TW run command title translation (thanks @PeterDaveHello!) - feat: Add Claude Sonnet 4.5 1M context window support for Claude Code (thanks @ColbySerpa!)",
+          "category": "feature",
+          "prNumber": 3107,
+          "commitHash": "c58c4ac",
+          "author": "kevinvandijk"
+        }
+      ]
+    },
+    {
+      "version": "4.106.0",
+      "changes": [
+        {
+          "description": "(also thanks to @NaccOll for paving the way) - Preliminary support for native tool calling (a.k.a native function calling) was added. This feature is currently experimental and mostly intended for users interested in contributing to its development. It is so far only supported when using OpenRouter or Kilo Code providers. There are possible issues including, but not limited to: - Missing tools (e.g. apply_diff tool) - Tools calls not updating the UI until they are complete - Tools being used even though they are disabled (e.g. browser tool) - MCP servers not working - Errors specific to certain inference providers Native tool calling can be enabled in Providers Settings > Advanced Settings > Tool Call Style > JSON. It is enabled by default for Claude Haiku 4.5, because that model does not work at all otherwise.",
+          "category": "fix",
+          "prNumber": 2833,
+          "commitHash": "0b8ef46",
+          "author": "mcowger"
+        },
+        {
+          "description": "CMD-I now invokes the agent so you can give it more complex prompts",
+          "category": "other",
+          "prNumber": 3050,
+          "commitHash": "357d438",
+          "author": "markijbema"
+        }
+      ]
+    }
+  ]
+}
