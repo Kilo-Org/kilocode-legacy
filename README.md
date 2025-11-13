@@ -45,7 +45,7 @@
 
 For details on building and developing the extension, see [DEVELOPMENT.md](/DEVELOPMENT.md)
 
-## Contributors to Kilo
+## Contributors
 
 Thanks to all the contributors who help make Kilo Code better!
 
@@ -91,7 +91,6 @@ Thanks to all the contributors who help make Kilo Code better!
         <img src="https://avatars.githubusercontent.com/u/2394703?size=100" width="100" height="100" alt="seuros" style="border-radius: 50%;" />
       </a>
     </td>    <td align="center">
-      <!-- added this line to test github action -->
       <a href="https://kilocode.ai/#contributors">
         <b>more ...</b>
       </a>
