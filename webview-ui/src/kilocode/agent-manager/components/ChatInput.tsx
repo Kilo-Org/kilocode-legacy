@@ -16,7 +16,6 @@ interface ChatInputProps {
 	sessionLabel?: string
 	isActive?: boolean
 	showCancel?: boolean
-	autoMode?: boolean // True if session is running in auto mode (non-interactive)
 	showFinishToBranch?: boolean
 	worktreeBranchName?: string
 	sessionStatus?: "creating" | "running" | "done" | "error" | "stopped"
@@ -27,7 +26,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	sessionLabel,
 	isActive = false,
 	showCancel = false,
-	autoMode = false,
 	showFinishToBranch = false,
 	worktreeBranchName,
 	sessionStatus,
@@ -46,33 +44,41 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 	const trimmedMessage = messageText.trim()
 	const isEmpty = trimmedMessage.length === 0
-	const isSessionRunning = sessionStatus === "running"
+	const isSessionCompleted = sessionStatus === "done" || sessionStatus === "error" || sessionStatus === "stopped"
 
-	// Input is disabled when:
-	// - In auto mode (non-interactive)
-	// - Session is not in "running" status (done, stopped, error, etc.)
-	const inputDisabled = autoMode || !isSessionRunning
-	// Send is disabled when: empty, auto-mode, or session not running
-	// Note: Users CAN queue multiple messages while one is sending
-	const sendDisabled = isEmpty || autoMode || !isSessionRunning
+	// Send is disabled when empty
+	// Note: Users CAN queue multiple messages while one is sending (for running sessions)
+	// Note: Users CAN send messages to completed sessions (to resume them)
+	const sendDisabled = isEmpty
 
 	const handleSend = () => {
-		if (isEmpty || autoMode || !isSessionRunning) return
+		if (isEmpty) return
 
-		// Queue the message instead of sending directly
-		const queuedMsg = addToQueue({ sessionId, content: trimmedMessage })
-
-		if (queuedMsg) {
-			// Notify the extension that a message has been queued
+		if (isSessionCompleted) {
+			// Resume a completed session with a new message (sent directly, not queued)
 			vscode.postMessage({
-				type: "agentManager.messageQueued",
+				type: "agentManager.resumeSession",
 				sessionId,
-				messageId: queuedMsg.id,
 				sessionLabel,
 				content: trimmedMessage,
 			})
-
 			setMessageText("")
+		} else {
+			// For running sessions, queue the message instead of sending directly
+			const queuedMsg = addToQueue({ sessionId, content: trimmedMessage })
+
+			if (queuedMsg) {
+				// Notify the extension that a message has been queued
+				vscode.postMessage({
+					type: "agentManager.messageQueued",
+					sessionId,
+					messageId: queuedMsg.id,
+					sessionLabel,
+					content: trimmedMessage,
+				})
+
+				setMessageText("")
+			}
 		}
 	}
 
@@ -123,14 +129,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 						onFocus={() => setIsFocused(true)}
 						onBlur={() => setIsFocused(false)}
 						aria-label={t("chatInput.ariaLabel")}
-						placeholder={
-							!isSessionRunning
-								? t("chatInput.sessionEnded")
-								: autoMode
-									? t("chatInput.autoMode")
-									: t("chatInput.placeholderTypeTask")
-						}
-						disabled={inputDisabled}
+						placeholder={t("chatInput.placeholderTypeTask")}
 						minRows={3}
 						maxRows={15}
 						className={cn(
@@ -221,10 +220,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 								</button>
 							</StandardTooltip>
 						)}
-						<StandardTooltip
-							content={inputDisabled ? t("chatInput.sessionEnded") : t("chatInput.sendTitle")}>
+						<StandardTooltip content={t("chatInput.sendTitle")}>
 							<button
-								aria-label={inputDisabled ? t("chatInput.sessionEnded") : t("chatInput.sendTitle")}
+								aria-label={t("chatInput.sendTitle")}
 								disabled={sendDisabled}
 								onClick={handleSend}
 								className={cn(

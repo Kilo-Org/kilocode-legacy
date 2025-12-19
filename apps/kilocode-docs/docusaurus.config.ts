@@ -52,7 +52,7 @@ const config: Config = {
 				docs: {
 					sidebarPath: "./sidebars.ts",
 					routeBasePath: "/",
-					editUrl: `${GITHUB_REPO_URL}/edit/main/`,
+					editUrl: `${GITHUB_MAIN_REPO_URL}/edit/main/apps/kilocode-docs/`,
 					showLastUpdateTime: true,
 				},
 				blog: false, // Disable blog feature

@@ -71,3 +71,6 @@ qdrant_storage/
 .secrets
 
 generated-types/extension
+
+# Architect plans
+plans/

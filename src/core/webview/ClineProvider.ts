@@ -33,11 +33,12 @@ import {
 	type CloudOrganizationMembership,
 	type CreateTaskOptions,
 	type TokenUsage,
+	type ToolUsage,
 	RooCodeEventName,
 	TelemetryEventName, // kilocode_change
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
-	glamaDefaultModelId,
+	glamaDefaultModelId, // kilocode_change
 	DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT,
 	DEFAULT_WRITE_DELAY_MS,
 	ORGANIZATION_ALLOW_ALL,
@@ -227,12 +228,12 @@ export class ClineProvider
 
 			// Create named listener functions so we can remove them later.
 			const onTaskStarted = () => this.emit(RooCodeEventName.TaskStarted, instance.taskId)
-			const onTaskCompleted = (taskId: string, tokenUsage: any, toolUsage: any) => {
+			const onTaskCompleted = (taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage) => {
 				kilo_execIfExtension(() => {
 					SessionManager.init()?.doSync(true)
 				})
 
-				return this.emit(RooCodeEventName.TaskCompleted, taskId, tokenUsage, toolUsage)
+				return this.emit(RooCodeEventName.TaskCompleted, taskId, tokenUsage, toolUsage) // kilocode_change: return
 			}
 			const onTaskAborted = async () => {
 				this.emit(RooCodeEventName.TaskAborted, instance.taskId)
@@ -273,8 +274,8 @@ export class ClineProvider
 			const onTaskUnpaused = (taskId: string) => this.emit(RooCodeEventName.TaskUnpaused, taskId)
 			const onTaskSpawned = (taskId: string) => this.emit(RooCodeEventName.TaskSpawned, taskId)
 			const onTaskUserMessage = (taskId: string) => this.emit(RooCodeEventName.TaskUserMessage, taskId)
-			const onTaskTokenUsageUpdated = (taskId: string, tokenUsage: TokenUsage) =>
-				this.emit(RooCodeEventName.TaskTokenUsageUpdated, taskId, tokenUsage)
+			const onTaskTokenUsageUpdated = (taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage) =>
+				this.emit(RooCodeEventName.TaskTokenUsageUpdated, taskId, tokenUsage, toolUsage)
 			const onModelChanged = () => this.postStateToWebview() // kilocode_change: Listen for model changes in virtual quota fallback
 
 			// Attach the listeners.
@@ -1697,7 +1698,7 @@ ${prompt}
 		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
 	}
 
-	// Glama
+	// kilocode_change: Glama
 
 	async handleGlamaCallback(code: string) {
 		let apiKey: string
@@ -1729,6 +1730,7 @@ ${prompt}
 
 		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
 	}
+	// kilocode_change end
 
 	// Requesty
 
@@ -2166,6 +2168,7 @@ ${prompt}
 			terminalCompressProgressBar,
 			historyPreviewCollapsed,
 			reasoningBlockCollapsed,
+			enterBehavior,
 			cloudUserInfo,
 			cloudIsAuthenticated,
 			sharingEnabled,
@@ -2213,8 +2216,11 @@ ${prompt}
 		// kilocode_change end
 
 		// kilocode_change start - checkSpeechToTextAvailable (only when experiment enabled)
-		let speechToTextAvailable =
-			experiments?.speechToText && (await checkSpeechToTextAvailable(this.providerSettingsManager))
+		let speechToTextStatus: { available: boolean; reason?: "openaiKeyMissing" | "ffmpegNotInstalled" } | undefined =
+			undefined
+		if (experiments?.speechToText) {
+			speechToTextStatus = await checkSpeechToTextAvailable(this.providerSettingsManager)
+		}
 		// kilocode_change end - checkSpeechToTextAvailable
 
 		let cloudOrganizations: CloudOrganizationMembership[] = []
@@ -2261,7 +2267,7 @@ ${prompt}
 			apiConfiguration,
 			customInstructions,
 			alwaysAllowReadOnly: alwaysAllowReadOnly ?? true,
-			alwaysAllowReadOnlyOutsideWorkspace: alwaysAllowReadOnlyOutsideWorkspace ?? true,
+			alwaysAllowReadOnlyOutsideWorkspace: alwaysAllowReadOnlyOutsideWorkspace ?? false,
 			alwaysAllowWrite: alwaysAllowWrite ?? true,
 			alwaysAllowWriteOutsideWorkspace: alwaysAllowWriteOutsideWorkspace ?? false,
 			alwaysAllowWriteProtected: alwaysAllowWriteProtected ?? false,
@@ -2362,6 +2368,7 @@ ${prompt}
 			hasSystemPromptOverride,
 			historyPreviewCollapsed: historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: reasoningBlockCollapsed ?? true,
+			enterBehavior: enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated: cloudIsAuthenticated ?? false,
 			cloudOrganizations,
@@ -2440,7 +2447,7 @@ ${prompt}
 			featureRoomoteControlEnabled,
 			virtualQuotaActiveModel, // kilocode_change: Include virtual quota active model in state
 			debug: vscode.workspace.getConfiguration(Package.name).get<boolean>("debug", false),
-			speechToTextAvailable, // kilocode_change: Whether speech-to-text is fully configured
+			speechToTextStatus, // kilocode_change: Speech-to-text availability status with failure reason
 		}
 	}
 
@@ -2556,7 +2563,7 @@ ${prompt}
 			customInstructions: stateValues.customInstructions,
 			apiModelId: stateValues.apiModelId,
 			alwaysAllowReadOnly: stateValues.alwaysAllowReadOnly ?? true,
-			alwaysAllowReadOnlyOutsideWorkspace: stateValues.alwaysAllowReadOnlyOutsideWorkspace ?? true,
+			alwaysAllowReadOnlyOutsideWorkspace: stateValues.alwaysAllowReadOnlyOutsideWorkspace ?? false,
 			alwaysAllowWrite: stateValues.alwaysAllowWrite ?? true,
 			alwaysAllowWriteOutsideWorkspace: stateValues.alwaysAllowWriteOutsideWorkspace ?? false,
 			alwaysAllowWriteProtected: stateValues.alwaysAllowWriteProtected ?? false,
@@ -2659,6 +2666,7 @@ ${prompt}
 			fastApplyApiProvider: stateValues.fastApplyApiProvider ?? "current", // kilocode_change: Fast Apply model api config id
 			historyPreviewCollapsed: stateValues.historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: stateValues.reasoningBlockCollapsed ?? true,
+			enterBehavior: stateValues.enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated,
 			sharingEnabled,

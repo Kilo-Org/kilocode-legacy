@@ -42,6 +42,7 @@ function createMockCallbacks(): CliProcessHandlerCallbacks & {
 	onChatMessages: ReturnType<typeof vi.fn>
 	onSessionCreated: ReturnType<typeof vi.fn>
 	onPaymentRequiredPrompt: ReturnType<typeof vi.fn>
+	onSessionRenamed: ReturnType<typeof vi.fn>
 } {
 	return {
 		onLog: vi.fn(),
@@ -53,6 +54,7 @@ function createMockCallbacks(): CliProcessHandlerCallbacks & {
 		onChatMessages: vi.fn(),
 		onSessionCreated: vi.fn(),
 		onPaymentRequiredPrompt: vi.fn(),
+		onSessionRenamed: vi.fn(),
 	}
 }
 
@@ -83,13 +85,13 @@ describe("CliProcessHandler", () => {
 	})
 
 	describe("spawnProcess", () => {
-		it("spawns a CLI process with correct arguments", () => {
+		it("spawns a CLI process with correct arguments (yolo mode for testing)", () => {
 			const onCliEvent = vi.fn()
 			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
 
 			expect(spawnMock).toHaveBeenCalledWith(
 				"/path/to/kilocode",
-				["--json-io", "--workspace=/workspace", "test prompt"],
+				["--json-io", "--yolo", "--workspace=/workspace", "test prompt"],
 				expect.objectContaining({
 					cwd: "/workspace",
 					stdio: ["pipe", "pipe", "pipe"],
@@ -315,6 +317,116 @@ describe("CliProcessHandler", () => {
 			delete process.env.KILO_API_KEY
 			if (previousProviderType === undefined) delete process.env.KILO_PROVIDER_TYPE
 			else process.env.KILO_PROVIDER_TYPE = previousProviderType
+		})
+
+		describe("Windows .cmd file handling", () => {
+			it("uses shell: true for .cmd files on Windows", () => {
+				const originalPlatform = process.platform
+				Object.defineProperty(process, "platform", { value: "win32", configurable: true })
+
+				try {
+					const onCliEvent = vi.fn()
+					handler.spawnProcess(
+						"C:\\Users\\test\\.kilocode\\cli\\pkg\\node_modules\\.bin\\kilocode.cmd",
+						"/workspace",
+						"test prompt",
+						undefined,
+						onCliEvent,
+					)
+
+					expect(spawnMock).toHaveBeenCalledWith(
+						"C:\\Users\\test\\.kilocode\\cli\\pkg\\node_modules\\.bin\\kilocode.cmd",
+						expect.any(Array),
+						expect.objectContaining({ shell: true }),
+					)
+				} finally {
+					Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true })
+				}
+			})
+
+			it("uses shell: true for .CMD files (case insensitive) on Windows", () => {
+				const originalPlatform = process.platform
+				Object.defineProperty(process, "platform", { value: "win32", configurable: true })
+
+				try {
+					const onCliEvent = vi.fn()
+					handler.spawnProcess(
+						"C:\\Users\\test\\kilocode.CMD",
+						"/workspace",
+						"test prompt",
+						undefined,
+						onCliEvent,
+					)
+
+					expect(spawnMock).toHaveBeenCalledWith(
+						"C:\\Users\\test\\kilocode.CMD",
+						expect.any(Array),
+						expect.objectContaining({ shell: true }),
+					)
+				} finally {
+					Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true })
+				}
+			})
+
+			it("uses shell: false for non-.cmd executables on Windows", () => {
+				const originalPlatform = process.platform
+				Object.defineProperty(process, "platform", { value: "win32", configurable: true })
+
+				try {
+					const onCliEvent = vi.fn()
+					handler.spawnProcess(
+						"C:\\Users\\test\\kilocode.exe",
+						"/workspace",
+						"test prompt",
+						undefined,
+						onCliEvent,
+					)
+
+					expect(spawnMock).toHaveBeenCalledWith(
+						"C:\\Users\\test\\kilocode.exe",
+						expect.any(Array),
+						expect.objectContaining({ shell: false }),
+					)
+				} finally {
+					Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true })
+				}
+			})
+
+			it("uses shell: false on macOS regardless of extension", () => {
+				const originalPlatform = process.platform
+				Object.defineProperty(process, "platform", { value: "darwin", configurable: true })
+
+				try {
+					const onCliEvent = vi.fn()
+					handler.spawnProcess("/usr/local/bin/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+					expect(spawnMock).toHaveBeenCalledWith(
+						"/usr/local/bin/kilocode",
+						expect.any(Array),
+						expect.objectContaining({ shell: false }),
+					)
+				} finally {
+					Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true })
+				}
+			})
+
+			it("uses shell: false on Linux regardless of extension", () => {
+				const originalPlatform = process.platform
+				Object.defineProperty(process, "platform", { value: "linux", configurable: true })
+
+				try {
+					const onCliEvent = vi.fn()
+					handler.spawnProcess("/usr/bin/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+					expect(spawnMock).toHaveBeenCalledWith(
+						"/usr/bin/kilocode",
+						expect.any(Array),
+						expect.objectContaining({ shell: false }),
+					)
+				} finally {
+					Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true })
+				}
+			})
 		})
 	})
 
@@ -677,7 +789,7 @@ describe("CliProcessHandler", () => {
 			)
 		})
 
-		it("handles exit with signal", () => {
+		it("handles exit with signal (null code)", () => {
 			const onCliEvent = vi.fn()
 			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
 			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
@@ -687,6 +799,59 @@ describe("CliProcessHandler", () => {
 			const session = registry.getSession("session-1")
 			expect(session?.status).toBe("error")
 			expect(callbacks.onSessionLog).toHaveBeenCalledWith("session-1", expect.stringContaining("signal SIGTERM"))
+		})
+
+		it("handles timeout exit (code 124)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
+
+			mockProcess.emit("exit", 124, null)
+
+			const session = registry.getSession("session-1")
+			expect(session?.status).toBe("error")
+			expect(session?.exitCode).toBe(124)
+			expect(session?.error).toBe("CLI timeout exceeded")
+			expect(callbacks.onSessionLog).toHaveBeenCalledWith("session-1", "Agent timed out")
+		})
+
+		it("handles SIGINT interrupted exit (code 130)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
+
+			mockProcess.emit("exit", 130, null)
+
+			const session = registry.getSession("session-1")
+			expect(session?.status).toBe("stopped")
+			expect(session?.exitCode).toBe(130)
+			expect(callbacks.onSessionLog).toHaveBeenCalledWith("session-1", "Agent was interrupted")
+		})
+
+		it("handles SIGKILL interrupted exit (code 137)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
+
+			mockProcess.emit("exit", 137, null)
+
+			const session = registry.getSession("session-1")
+			expect(session?.status).toBe("stopped")
+			expect(session?.exitCode).toBe(137)
+			expect(callbacks.onSessionLog).toHaveBeenCalledWith("session-1", "Agent was interrupted")
+		})
+
+		it("handles SIGTERM interrupted exit (code 143)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
+
+			mockProcess.emit("exit", 143, null)
+
+			const session = registry.getSession("session-1")
+			expect(session?.status).toBe("stopped")
+			expect(session?.exitCode).toBe(143)
+			expect(callbacks.onSessionLog).toHaveBeenCalledWith("session-1", "Agent was interrupted")
 		})
 
 		it("flushes parser buffer on exit", () => {
@@ -1066,6 +1231,224 @@ describe("CliProcessHandler", () => {
 					gitUrl: undefined,
 				}),
 			)
+		})
+	})
+
+	describe("provisional session handling", () => {
+		it("creates provisional session when kilocode event arrives before session_created", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created (e.g., user_feedback with the prompt)
+			const kilocodeEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent + "\n"))
+
+			// A provisional session should be created
+			const sessions = registry.getSessions()
+			expect(sessions).toHaveLength(1)
+			expect(sessions[0].sessionId).toMatch(/^provisional-/)
+			expect(sessions[0].status).toBe("running")
+		})
+
+		it("forwards events to provisional session before session_created", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created
+			const kilocodeEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent + "\n"))
+
+			// Event should be forwarded with provisional session ID
+			expect(onCliEvent).toHaveBeenCalledWith(
+				expect.stringMatching(/^provisional-/),
+				expect.objectContaining({
+					streamEventType: "kilocode",
+					payload: expect.objectContaining({
+						type: "say",
+						say: "user_feedback",
+					}),
+				}),
+			)
+		})
+
+		it("renames provisional session to real session ID when session_created arrives", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created to create provisional session
+			const kilocodeEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent + "\n"))
+
+			// Get the provisional session ID
+			const provisionalId = registry.getSessions()[0].sessionId
+			expect(provisionalId).toMatch(/^provisional-/)
+
+			// Now emit session_created with real session ID
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"real-session-123"}\n'))
+
+			// Session should be renamed
+			const sessions = registry.getSessions()
+			expect(sessions).toHaveLength(1)
+			expect(sessions[0].sessionId).toBe("real-session-123")
+			expect(registry.getSession(provisionalId)).toBeUndefined()
+			expect(registry.getSession("real-session-123")).toBeDefined()
+		})
+
+		it("calls onSessionRenamed callback when provisional session is upgraded", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created to create provisional session
+			const kilocodeEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent + "\n"))
+
+			// Get the provisional session ID
+			const provisionalId = registry.getSessions()[0].sessionId
+
+			// Now emit session_created with real session ID
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"real-session-123"}\n'))
+
+			// onSessionRenamed should be called with old and new IDs
+			expect(callbacks.onSessionRenamed).toHaveBeenCalledWith(provisionalId, "real-session-123")
+		})
+
+		it("continues forwarding events to new session ID after rename", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created to create provisional session
+			const kilocodeEvent1 = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent1 + "\n"))
+
+			// Now emit session_created with real session ID
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"real-session-123"}\n'))
+
+			// Clear previous calls
+			onCliEvent.mockClear()
+
+			// Emit another kilocode event after session_created
+			const kilocodeEvent2 = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "text", content: "Hello world" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent2 + "\n"))
+
+			// Event should be forwarded with the real session ID
+			expect(onCliEvent).toHaveBeenCalledWith(
+				"real-session-123",
+				expect.objectContaining({
+					streamEventType: "kilocode",
+					payload: expect.objectContaining({
+						type: "say",
+						say: "text",
+						content: "Hello world",
+					}),
+				}),
+			)
+		})
+
+		it("does not call onSessionRenamed when no provisional session exists", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit session_created directly without any kilocode events first
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"session-1"}\n'))
+
+			// onSessionRenamed should NOT be called
+			expect(callbacks.onSessionRenamed).not.toHaveBeenCalled()
+		})
+
+		it("creates provisional session for api_req_started events", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit api_req_started before session_created - this SHOULD create provisional session
+			const apiStartedEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { say: "api_req_started" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(apiStartedEvent + "\n"))
+
+			// Provisional session should be created
+			const sessions = registry.getSessions()
+			expect(sessions).toHaveLength(1)
+			expect(sessions[0].sessionId).toMatch(/^provisional-/)
+		})
+
+		it("creates provisional session for user_feedback events (user prompt echo)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit user_feedback event - this SHOULD create provisional session
+			const userFeedbackEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(userFeedbackEvent + "\n"))
+
+			// Provisional session should be created
+			const sessions = registry.getSessions()
+			expect(sessions).toHaveLength(1)
+			expect(sessions[0].sessionId).toMatch(/^provisional-/)
+		})
+
+		it("creates provisional session for text events (streaming content)", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit text event - this SHOULD create provisional session
+			const textEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "text", content: "Hello" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(textEvent + "\n"))
+
+			// Provisional session should be created
+			const sessions = registry.getSessions()
+			expect(sessions).toHaveLength(1)
+			expect(sessions[0].sessionId).toMatch(/^provisional-/)
+		})
+
+		it("preserves session data when renaming provisional session", () => {
+			const onCliEvent = vi.fn()
+			handler.spawnProcess("/path/to/kilocode", "/workspace", "test prompt", undefined, onCliEvent)
+
+			// Emit a kilocode event before session_created to create provisional session
+			const kilocodeEvent = JSON.stringify({
+				streamEventType: "kilocode",
+				payload: { type: "say", say: "user_feedback", content: "test prompt" },
+			})
+			mockProcess.stdout.emit("data", Buffer.from(kilocodeEvent + "\n"))
+
+			// Get the provisional session
+			const provisionalSession = registry.getSessions()[0]
+			expect(provisionalSession.prompt).toBe("test prompt")
+			expect(provisionalSession.status).toBe("running")
+
+			// Now emit session_created with real session ID
+			mockProcess.stdout.emit("data", Buffer.from('{"event":"session_created","sessionId":"real-session-123"}\n'))
+
+			// Session should be renamed but preserve data
+			const renamedSession = registry.getSession("real-session-123")
+			expect(renamedSession).toBeDefined()
+			expect(renamedSession?.prompt).toBe("test prompt")
+			expect(renamedSession?.status).toBe("running")
+			expect(renamedSession?.pid).toBe(12345)
 		})
 	})
 })
