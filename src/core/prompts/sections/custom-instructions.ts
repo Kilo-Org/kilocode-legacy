@@ -256,9 +256,10 @@ export async function loadRuleFiles(cwd: string): Promise<string> {
  */
 async function loadAgentRulesFile(cwd: string): Promise<string> {
 	try {
+		const activePath = vscodeAPI?.window?.activeTextEditor?.document?.uri?.fsPath
 		return await loadAgentRulesContent({
 			cwd,
-			activePath: vscodeAPI?.window?.activeTextEditor?.document?.uri?.fsPath,
+			...(activePath ? { activePath } : {}),
 			readFile: safeReadFile,
 		})
 	} catch (error) {
