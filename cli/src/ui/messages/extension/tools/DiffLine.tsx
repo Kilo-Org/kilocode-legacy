@@ -1,6 +1,6 @@
 import React from "react"
 import { Box, Text } from "ink"
-import type { ParsedDiffLine } from "../utils.js"
+import type { ParsedDiffLine } from "../diff.js"
 import type { useTheme } from "../../../../state/hooks/useTheme.js"
 
 /**
