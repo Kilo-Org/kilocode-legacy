@@ -31,10 +31,6 @@ export type ParsedApiReqStartedTextType = {
  * const { totalTokensIn, totalTokensOut, totalCost } = getApiMetrics(messages);
  * // Result: { totalTokensIn: 10, totalTokensOut: 20, totalCost: 0.005 }
  */
-// kilocode_change start - debug logging for context indicator
-const DEBUG_CONTEXT_INDICATOR = true
-// kilocode_change end
-
 export function getApiMetrics(messages: ClineMessage[]) {
 	const result: TokenUsage = {
 		totalTokensIn: 0,
@@ -103,22 +99,6 @@ export function getApiMetrics(messages: ClineMessage[]) {
 	result.contextTokens = 0
 	let foundValidTokenData = false
 
-	// kilocode_change start - debug logging
-	if (DEBUG_CONTEXT_INDICATOR) {
-		console.log(
-			`[getApiMetrics] Processing ${messages.length} messages for contextTokens`,
-			messages.map((m, i) => ({
-				index: i,
-				type: m.type,
-				say: m.say,
-				ask: m.ask,
-				hasText: !!m.text,
-				textPreview: m.text?.substring(0, 100),
-			})),
-		)
-	}
-	// kilocode_change end
-
 	for (let i = messages.length - 1; i >= 0; i--) {
 		const message = messages[i]
 
@@ -134,40 +114,12 @@ export function getApiMetrics(messages: ClineMessage[]) {
 				// - 0 is a valid value (though rare) that we should accept
 				const hasTokenData = typeof tokensIn === "number" || typeof tokensOut === "number"
 
-				// kilocode_change start - debug logging
-				if (DEBUG_CONTEXT_INDICATOR) {
-					console.log(`[getApiMetrics] Message ${i}: api_req_started`, {
-						tokensIn,
-						tokensOut,
-						hasTokenData,
-						typeofTokensIn: typeof tokensIn,
-						typeofTokensOut: typeof tokensOut,
-						parsedText,
-					})
-				}
-				// kilocode_change end
-
 				if (hasTokenData) {
 					// Since tokensIn now stores TOTAL input tokens (including cache tokens),
 					// we no longer need to add cacheWrites and cacheReads separately.
 					// This applies to both Anthropic and OpenAI protocols.
 					result.contextTokens = (tokensIn || 0) + (tokensOut || 0)
 					foundValidTokenData = true
-					// kilocode_change start - debug logging
-					if (DEBUG_CONTEXT_INDICATOR) {
-						console.log(`[getApiMetrics] Found valid token data at message ${i}:`, {
-							contextTokens: result.contextTokens,
-							tokensIn,
-							tokensOut,
-						})
-					}
-					// kilocode_change end
-				} else {
-					// kilocode_change start - debug logging
-					if (DEBUG_CONTEXT_INDICATOR) {
-						console.log(`[getApiMetrics] Message ${i} is a placeholder (no token data), continuing search`)
-					}
-					// kilocode_change end
 				}
 				// If no token data, this is a placeholder - continue searching backwards
 			} catch (error) {
@@ -177,13 +129,6 @@ export function getApiMetrics(messages: ClineMessage[]) {
 		} else if (message.type === "say" && message.say === "condense_context") {
 			result.contextTokens = message.contextCondense?.newContextTokens ?? 0
 			foundValidTokenData = true
-			// kilocode_change start - debug logging
-			if (DEBUG_CONTEXT_INDICATOR) {
-				console.log(`[getApiMetrics] Found condense_context at message ${i}:`, {
-					contextTokens: result.contextTokens,
-				})
-			}
-			// kilocode_change end
 		}
 
 		// Only break if we found valid token data
@@ -191,17 +136,6 @@ export function getApiMetrics(messages: ClineMessage[]) {
 			break
 		}
 	}
-
-	// kilocode_change start - debug logging
-	if (DEBUG_CONTEXT_INDICATOR) {
-		console.log(`[getApiMetrics] Final result:`, {
-			contextTokens: result.contextTokens,
-			foundValidTokenData,
-			totalTokensIn: result.totalTokensIn,
-			totalTokensOut: result.totalTokensOut,
-		})
-	}
-	// kilocode_change end
 
 	return result
 }
