@@ -26,6 +26,7 @@ const DEFAULT_HEADERS = {
 export class OcaHandler extends BaseProvider implements SingleCompletionHandler {
 	private options: ApiHandlerOptions
 	private baseURL: string
+	private readonly toolCallIdentityById = new Map<string, { id: string; name: string }>()
 
 	constructor(options: ApiHandlerOptions) {
 		super()
@@ -74,10 +75,41 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		metadata?: ApiHandlerCreateMessageMetadata,
 	): ApiStream {
 		const client = await this.getClient()
+		const { info: modelInfo, id: modelId } = this.getModel()
 
-		
-		const { info: modelInfo } = this.getModel()
+		// Branch between Responses API and Chat/Completions API
+		const prefersResponses =
+			modelInfo.apiType === "responses" ||
+			(modelInfo.supportedApiTypes &&
+				Array.isArray(modelInfo.supportedApiTypes) &&
+				modelInfo.supportedApiTypes.includes("RESPONSES"))
 
+		if (prefersResponses && typeof (client as any).responses?.create === "function") {
+			// -- Responses API logic, inspired by openai-responses.ts --
+			const formattedInput = this.formatFullConversation(systemPrompt, messages)
+			const requestBody = this.buildResponsesRequestBody(
+				modelId,
+				modelInfo,
+				formattedInput,
+				systemPrompt,
+				metadata,
+			)
+			try {
+				const stream = (await (client as any).responses.create(requestBody, {
+					signal: undefined,
+				})) as AsyncIterable<any>
+				for await (const event of stream) {
+					for await (const chunk of this.processResponsesEvent(event, modelInfo)) {
+						yield chunk
+					}
+				}
+			} catch (err) {
+				throw handleOpenAIError(err, "Oracle Code Assist (Responses API)")
+			}
+			return
+		}
+
+		// --- Existing Chat/Completions API logic ---
 		const supportsNativeTools = modelInfo.supportsNativeTools ?? false
 		const useNativeTools =
 			supportsNativeTools &&
@@ -88,7 +120,9 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 
 		const requestedToolChoice = metadata?.tool_choice
 		const finalToolChoice =
-			useNativeTools && (!requestedToolChoice || requestedToolChoice === "auto") ? "required" : requestedToolChoice
+			useNativeTools && (!requestedToolChoice || requestedToolChoice === "auto")
+				? "required"
+				: requestedToolChoice
 
 		const request: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
 			model: this.options.apiModelId || "auto",
@@ -135,12 +169,13 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				}
 			}
 			{
-				const reasoningText =
-					("reasoning_content" in (delta || {}) && typeof (delta as any).reasoning_content === "string"
+				const reasoningText = (
+					"reasoning_content" in (delta || {}) && typeof (delta as any).reasoning_content === "string"
 						? (delta as any).reasoning_content
 						: "reasoning" in (delta || {}) && typeof (delta as any).reasoning === "string"
 							? (delta as any).reasoning
-							: undefined) as string | undefined
+							: undefined
+				) as string | undefined
 				if (reasoningText) {
 					yield { type: "reasoning", text: reasoningText }
 				}
@@ -165,6 +200,185 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				yield { type: "tool_call_end", id }
 			}
 			activeToolCallIds.clear()
+		}
+	}
+
+	// -- Responses API: Conversation formatting --
+	private formatFullConversation(systemPrompt: string, messages: any[]): any[] {
+		const input: any[] = []
+		for (const m of messages) {
+			if (m.type === "reasoning") {
+				input.push(m)
+			} else if (m.role === "user") {
+				const content: any[] = []
+				if (typeof m.content === "string") {
+					content.push({ type: "input_text", text: m.content })
+				} else if (Array.isArray(m.content)) {
+					for (const block of m.content) {
+						if (block.type === "text") {
+							content.push({ type: "input_text", text: block.text })
+						} else if (block.type === "image") {
+							const imageUrl =
+								block.source.type === "base64"
+									? `data:${block.source.media_type};base64,${block.source.data}`
+									: block.source.url
+							content.push({ type: "input_image", image_url: imageUrl })
+						}
+					}
+				}
+				if (content.length > 0) {
+					input.push({ role: "user", content })
+				}
+			} else if (m.role === "assistant") {
+				const content: any[] = []
+				if (typeof m.content === "string") {
+					content.push({ type: "output_text", text: m.content })
+				} else if (Array.isArray(m.content)) {
+					for (const block of m.content) {
+						if (block.type === "text") {
+							content.push({ type: "output_text", text: block.text })
+						}
+					}
+				}
+				if (content.length > 0) {
+					input.push({ role: "assistant", content })
+				}
+			}
+		}
+		return input
+	}
+
+	// -- Responses API: Request body builder --
+	private buildResponsesRequestBody(
+		modelId: string,
+		modelInfo: any,
+		formattedInput: any[],
+		systemPrompt: string,
+		metadata?: ApiHandlerCreateMessageMetadata,
+	): any {
+		const body: any = {
+			model: modelId,
+			input: formattedInput,
+			stream: true,
+			store: false,
+			instructions: systemPrompt,
+		}
+		if (modelInfo.supportsTemperature !== false && typeof this.options.modelTemperature === "number") {
+			body.temperature = this.options.modelTemperature
+		}
+		if (modelInfo.maxTokens && this.options.includeMaxTokens) {
+			body.max_output_tokens = modelInfo.maxTokens
+		}
+		if (metadata?.tools?.length) {
+			body.tools = metadata.tools
+				.filter((t) => t.type === "function")
+				.map((t) => ({
+					type: "function",
+					name: t.function.name,
+					description: t.function.description,
+					parameters: this.convertToolSchemaForOpenAI(t.function.parameters),
+					strict: true,
+				}))
+		}
+		if (metadata?.tool_choice) {
+			body.tool_choice = metadata.tool_choice
+		}
+		return body
+	}
+
+	// -- Responses API: Event processor (yield openai-responses style output chunks) --
+	private async *processResponsesEvent(event: any, modelInfo: any): AsyncIterable<any> {
+		const eventType = event?.type
+
+		if (
+			eventType === "response.text.delta" ||
+			eventType === "response.output_text.delta" ||
+			eventType === "response.output_text" ||
+			eventType === "response.text"
+		) {
+			const text = event.delta || event.text || event?.content?.[0]?.text
+			if (text) {
+				yield { type: "text", text }
+			}
+			return
+		}
+
+		if (
+			eventType === "response.reasoning.delta" ||
+			eventType === "response.reasoning_text.delta" ||
+			eventType === "response.reasoning_summary.delta" ||
+			eventType === "response.reasoning_summary_text.delta"
+		) {
+			const text = event.delta || event.text
+			if (text) {
+				yield { type: "reasoning", text }
+			}
+			return
+		}
+
+		if (eventType === "response.output_item.added" || eventType === "response.output_item.done") {
+			const item = event.item
+			if (item?.type === "function_call") {
+				if (item.call_id && item.name) {
+					this.toolCallIdentityById.set(item.call_id, { id: item.call_id, name: item.name })
+				}
+
+				if (eventType === "response.output_item.done") {
+					const args = typeof item.arguments === "string" ? item.arguments : undefined
+					if (item.call_id && item.name && args) {
+						yield {
+							type: "tool_call",
+							id: item.call_id,
+							name: item.name,
+							arguments: args,
+						}
+					}
+				}
+			}
+			return
+		}
+
+		if (
+			eventType === "response.tool_call_arguments.delta" ||
+			eventType === "response.function_call_arguments.delta"
+		) {
+			const callId = event.call_id
+			const cachedIdentity = callId ? this.toolCallIdentityById.get(callId) : undefined
+			const resolvedId = event.call_id || cachedIdentity?.id
+			const resolvedName = event.name || cachedIdentity?.name
+			if (!resolvedId || !resolvedName) {
+				return
+			}
+			yield {
+				type: "tool_call_partial",
+				index: 0,
+				id: resolvedId,
+				name: resolvedName,
+				arguments: event.delta,
+			}
+			return
+		}
+
+		if (
+			eventType === "response.tool_call_arguments.done" ||
+			eventType === "response.function_call_arguments.done"
+		) {
+			if (event.call_id) {
+				yield { type: "tool_call_end", id: event.call_id }
+			}
+			return
+		}
+
+		if (eventType === "response.completed" || eventType === "response.done") {
+			const usage = event.response?.usage
+			if (usage) {
+				yield {
+					type: "usage",
+					inputTokens: usage.input_tokens ?? usage.prompt_tokens ?? 0,
+					outputTokens: usage.output_tokens ?? usage.completion_tokens ?? 0,
+				}
+			}
+			return
 		}
 	}
 
@@ -197,6 +411,8 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			cacheReadsPrice: selected?.cacheReadsPrice,
 			description: selected?.description,
 			banner: selected?.banner,
+			supportedApiTypes: selected?.supportedApiTypes,
+			apiType: selected?.apiType,
 		}
 		const info: ModelInfo = {
 			...NATIVE_TOOL_DEFAULTS,
