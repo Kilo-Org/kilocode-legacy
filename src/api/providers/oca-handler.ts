@@ -204,13 +204,17 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 	}
 
 	// -- Responses API: Conversation formatting --
+	// Updated to include "tool_result" and "tool_use" logic like openai-responses.ts
 	private formatFullConversation(systemPrompt: string, messages: any[]): any[] {
 		const input: any[] = []
 		for (const m of messages) {
 			if (m.type === "reasoning") {
 				input.push(m)
-			} else if (m.role === "user") {
+				continue
+			}
+			if (m.role === "user") {
 				const content: any[] = []
+				const toolResults: any[] = []
 				if (typeof m.content === "string") {
 					content.push({ type: "input_text", text: m.content })
 				} else if (Array.isArray(m.content)) {
@@ -223,25 +227,49 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 									? `data:${block.source.media_type};base64,${block.source.data}`
 									: block.source.url
 							content.push({ type: "input_image", image_url: imageUrl })
+						} else if (block.type === "tool_result") {
+							const result =
+								typeof block.content === "string"
+									? block.content
+									: block.content?.map((c: any) => (c.type === "text" ? c.text : "")).join("") || ""
+							toolResults.push({
+								type: "function_call_output",
+								call_id: block.tool_use_id,
+								output: result,
+							})
 						}
 					}
 				}
 				if (content.length > 0) {
 					input.push({ role: "user", content })
 				}
+				if (toolResults.length > 0) {
+					input.push(...toolResults)
+				}
 			} else if (m.role === "assistant") {
 				const content: any[] = []
+				const toolCalls: any[] = []
 				if (typeof m.content === "string") {
 					content.push({ type: "output_text", text: m.content })
 				} else if (Array.isArray(m.content)) {
 					for (const block of m.content) {
 						if (block.type === "text") {
 							content.push({ type: "output_text", text: block.text })
+						} else if (block.type === "tool_use") {
+							toolCalls.push({
+								type: "function_call",
+								call_id: block.id,
+								name: block.name,
+								arguments: JSON.stringify(block.input),
+							})
 						}
 					}
 				}
 				if (content.length > 0) {
 					input.push({ role: "assistant", content })
+				}
+				if (toolCalls.length > 0) {
+					input.push(...toolCalls)
 				}
 			}
 		}
