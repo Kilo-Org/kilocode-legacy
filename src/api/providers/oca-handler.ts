@@ -16,6 +16,8 @@ import { getOcaClientInfo } from "./oca/utils/getOcaClientInfo"
 import { DEFAULT_HEADERS as BASE_HEADERS } from "./constants"
 import { getModelsFromCache } from "./fetchers/modelCache"
 import { verifyFinishReason } from "./kilocode/verifyFinishReason"
+import { normalizeObjectAdditionalPropertiesFalse } from "./kilocode/openai-strict-schema"
+import { isMcpTool } from "../../utils/mcp-name"
 
 const DEFAULT_HEADERS = {
 	...BASE_HEADERS,
@@ -284,33 +286,62 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		systemPrompt: string,
 		metadata?: ApiHandlerCreateMessageMetadata,
 	): any {
-		const body: any = {
+		interface ResponsesRequestBody {
+			model: string
+			input: Array<{ role: "user" | "assistant"; content: any[] } | { type: string; content: string }>
+			stream: boolean
+			reasoning?: { summary?: "auto" }
+			temperature?: number
+			max_output_tokens?: number
+			store?: boolean
+			instructions?: string
+			include?: string[]
+			tools?: Array<{
+				type: "function"
+				name: string
+				description?: string
+				parameters?: any
+				strict?: boolean
+			}>
+			tool_choice?: any
+			parallel_tool_calls?: boolean
+		}
+
+		const body: ResponsesRequestBody = {
 			model: modelId,
 			input: formattedInput,
 			stream: true,
 			store: false,
 			instructions: systemPrompt,
+			...(this.options.enableResponsesReasoningSummary ? { reasoning: { summary: "auto" as const } } : {}),
+			...(modelInfo.supportsTemperature !== false &&
+				typeof this.options.modelTemperature === "number" && {
+					temperature: this.options.modelTemperature,
+				}),
+			...(modelInfo.maxTokens && this.options.includeMaxTokens ? { max_output_tokens: modelInfo.maxTokens } : {}),
+			...(metadata?.tools && {
+				tools: metadata.tools
+					.filter((tool) => tool.type === "function")
+					.map((tool) => {
+						const isMcp = isMcpTool(tool.function.name)
+						return {
+							type: "function",
+							name: tool.function.name,
+							description: tool.function.description,
+							parameters: isMcp
+								? normalizeObjectAdditionalPropertiesFalse(tool.function.parameters)
+								: this.convertToolSchemaForOpenAI(tool.function.parameters),
+							strict: !isMcp,
+						}
+					}),
+			}),
+			...(metadata?.tool_choice && { tool_choice: metadata.tool_choice }),
 		}
-		if (modelInfo.supportsTemperature !== false && typeof this.options.modelTemperature === "number") {
-			body.temperature = this.options.modelTemperature
+
+		if (metadata?.toolProtocol === "native") {
+			body.parallel_tool_calls = metadata.parallelToolCalls ?? false
 		}
-		if (modelInfo.maxTokens && this.options.includeMaxTokens) {
-			body.max_output_tokens = modelInfo.maxTokens
-		}
-		if (metadata?.tools?.length) {
-			body.tools = metadata.tools
-				.filter((t) => t.type === "function")
-				.map((t) => ({
-					type: "function",
-					name: t.function.name,
-					description: t.function.description,
-					parameters: this.convertToolSchemaForOpenAI(t.function.parameters),
-					strict: true,
-				}))
-		}
-		if (metadata?.tool_choice) {
-			body.tool_choice = metadata.tool_choice
-		}
+
 		return body
 	}
 
