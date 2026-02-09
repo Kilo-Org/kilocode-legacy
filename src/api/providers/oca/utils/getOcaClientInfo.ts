@@ -11,13 +11,13 @@ export function getOcaClientInfo(): {
 	clientIde: string
 	clientIdeVersion: string
 } {
-	let client = "kilocode-mmirodri"
+	let client = "kilocode"
 	let clientVersion = ""
 	let clientIde = ""
 	let clientIdeVersion = ""
 
 	try {
-		client = "kilocode-mmirodri"
+		client = Package.name
 		clientVersion = Package.version
 
 		const { kiloCodeWrapperTitle, kiloCodeWrapperVersion } = getKiloCodeWrapperProperties()
