@@ -1,6 +1,11 @@
 import OpenAI from "openai"
 
-import { type ModelInfo, NATIVE_TOOL_DEFAULTS } from "@roo-code/types"
+import {
+	type ModelInfo,
+	NATIVE_TOOL_DEFAULTS,
+	OPENAI_NATIVE_DEFAULT_TEMPERATURE,
+	ReasoningEffortExtended,
+} from "@roo-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 import { ApiStream } from "../transform/stream"
@@ -18,6 +23,7 @@ import { getModelsFromCache } from "./fetchers/modelCache"
 import { verifyFinishReason } from "./kilocode/verifyFinishReason"
 import { normalizeObjectAdditionalPropertiesFalse } from "./kilocode/openai-strict-schema"
 import { isMcpTool } from "../../utils/mcp-name"
+import { sanitizeOpenAiCallId } from "../../utils/tool-id"
 
 const DEFAULT_HEADERS = {
 	...BASE_HEADERS,
@@ -28,7 +34,16 @@ const DEFAULT_HEADERS = {
 export class OcaHandler extends BaseProvider implements SingleCompletionHandler {
 	private options: ApiHandlerOptions
 	private baseURL: string
-	private readonly toolCallIdentityById = new Map<string, { id: string; name: string }>()
+	private lastResponseId: string | undefined
+	// Complete response output array (includes reasoning items with encrypted_content)
+	private lastResponseOutput: any[] | undefined
+	/**
+	 * Some Responses streams emit tool-call argument deltas without stable call id/name.
+	 * Track the last observed tool identity from output_item events so we can still
+	 * emit `tool_call_partial` chunks (tool-call-only streams).
+	 */
+	private pendingToolCallId: string | undefined
+	private pendingToolCallName: string | undefined
 
 	constructor(options: ApiHandlerOptions) {
 		super()
@@ -86,8 +101,14 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				Array.isArray(modelInfo.supportedApiTypes) &&
 				modelInfo.supportedApiTypes.includes("RESPONSES"))
 
-		if (prefersResponses && typeof (client as any).responses?.create === "function") {
-			// -- Responses API logic, inspired by openai-responses.ts --
+		if (prefersResponses) {
+			// -- Responses API logic, inspired by openai-native.ts --
+			this.lastResponseId = undefined
+			this.lastResponseOutput = undefined
+			this.pendingToolCallId = undefined
+			this.pendingToolCallName = undefined
+			const reasoningEffort = this.getReasoningEffort(modelInfo)
+
 			const formattedInput = this.formatFullConversation(systemPrompt, messages)
 			const requestBody = this.buildResponsesRequestBody(
 				modelId,
@@ -236,7 +257,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 									: block.content?.map((c: any) => (c.type === "text" ? c.text : "")).join("") || ""
 							toolResults.push({
 								type: "function_call_output",
-								call_id: block.tool_use_id,
+								call_id: sanitizeOpenAiCallId(block.tool_use_id),
 								output: result,
 							})
 						}
@@ -260,7 +281,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 						} else if (block.type === "tool_use") {
 							toolCalls.push({
 								type: "function_call",
-								call_id: block.id,
+								call_id: sanitizeOpenAiCallId(block.id),
 								name: block.name,
 								arguments: JSON.stringify(block.input),
 							})
@@ -281,7 +302,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 	// -- Responses API: Request body builder --
 	private buildResponsesRequestBody(
 		modelId: string,
-		modelInfo: any,
+		modelInfo: ModelInfo,
 		formattedInput: any[],
 		systemPrompt: string,
 		metadata?: ApiHandlerCreateMessageMetadata,
@@ -347,49 +368,117 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 
 	// -- Responses API: Event processor (yield openai-responses style output chunks) --
 	private async *processResponsesEvent(event: any, modelInfo: any): AsyncIterable<any> {
-		const eventType = event?.type
+		// Capture complete output array (includes reasoning items with encrypted_content)
+		if (event?.response?.output && Array.isArray(event.response.output)) {
+			this.lastResponseOutput = event.response.output
+		}
+		// Capture top-level response id
+		if (event?.response?.id) {
+			this.lastResponseId = event.response.id as string
+		}
 
-		if (
-			eventType === "response.text.delta" ||
-			eventType === "response.output_text.delta" ||
-			eventType === "response.output_text" ||
-			eventType === "response.text"
-		) {
-			const text = event.delta || event.text || event?.content?.[0]?.text
-			if (text) {
-				yield { type: "text", text }
+		// Handle known streaming text deltas
+		if (event?.type === "response.text.delta" || event?.type === "response.output_text.delta") {
+			if (event?.delta) {
+				yield { type: "text", text: event.delta }
 			}
 			return
 		}
 
+		// Handle reasoning deltas (including summary variants)
 		if (
-			eventType === "response.reasoning.delta" ||
-			eventType === "response.reasoning_text.delta" ||
-			eventType === "response.reasoning_summary.delta" ||
-			eventType === "response.reasoning_summary_text.delta"
+			event?.type === "response.reasoning.delta" ||
+			event?.type === "response.reasoning_text.delta" ||
+			event?.type === "response.reasoning_summary.delta" ||
+			event?.type === "response.reasoning_summary_text.delta"
 		) {
-			const text = event.delta || event.text
-			if (text) {
-				yield { type: "reasoning", text }
+			if (event?.delta) {
+				yield { type: "reasoning", text: event.delta }
 			}
 			return
 		}
 
-		if (eventType === "response.output_item.added" || eventType === "response.output_item.done") {
-			const item = event.item
-			if (item?.type === "function_call") {
-				if (item.call_id && item.name) {
-					this.toolCallIdentityById.set(item.call_id, { id: item.call_id, name: item.name })
+		// Handle refusal deltas
+		if (event?.type === "response.refusal.delta") {
+			if (event?.delta) {
+				yield { type: "text", text: `[Refusal] ${event.delta}` }
+			}
+			return
+		}
+
+		// Handle tool/function call deltas - emit as partial chunks
+		if (
+			event?.type === "response.tool_call_arguments.delta" ||
+			event?.type === "response.function_call_arguments.delta"
+		) {
+			// Some streams omit stable identity on delta events; fall back to the
+			// most recently observed tool identity from output_item events.
+			const callId = event.call_id || event.tool_call_id || event.id || this.pendingToolCallId || undefined
+			const name = event.name || event.function_name || this.pendingToolCallName || undefined
+			const args = event.delta || event.arguments
+
+			// Avoid emitting incomplete tool_call_partial chunks; the downstream
+			// NativeToolCallParser needs a name to start a call.
+			if (typeof name === "string" && name.length > 0 && typeof callId === "string" && callId.length > 0) {
+				yield {
+					type: "tool_call_partial",
+					index: event.index ?? 0,
+					id: callId,
+					name,
+					arguments: args,
+				}
+			}
+			return
+		}
+
+		// Handle tool/function call completion events
+		if (
+			event?.type === "response.tool_call_arguments.done" ||
+			event?.type === "response.function_call_arguments.done"
+		) {
+			// Tool call complete - no action needed, NativeToolCallParser handles completion
+			return
+		}
+
+		// Handle output item additions/completions (SDK or Responses API alternative format)
+		if (event?.type === "response.output_item.added" || event?.type === "response.output_item.done") {
+			const item = event?.item
+			if (item) {
+				// Capture tool identity so subsequent argument deltas can be attributed.
+				if (item.type === "function_call" || item.type === "tool_call") {
+					const callId = item.call_id || item.tool_call_id || item.id
+					const name = item.name || item.function?.name || item.function_name
+					if (typeof callId === "string" && callId.length > 0) {
+						this.pendingToolCallId = callId
+						this.pendingToolCallName = typeof name === "string" ? name : undefined
+					}
 				}
 
-				if (eventType === "response.output_item.done") {
-					const args = typeof item.arguments === "string" ? item.arguments : undefined
-					if (item.call_id && item.name && args) {
+				if (item.type === "text" && item.text) {
+					yield { type: "text", text: item.text }
+				} else if (item.type === "reasoning" && item.text) {
+					yield { type: "reasoning", text: item.text }
+				} else if (item.type === "message" && Array.isArray(item.content)) {
+					for (const content of item.content) {
+						// Some implementations send 'text'; others send 'output_text'
+						if ((content?.type === "text" || content?.type === "output_text") && content?.text) {
+							yield { type: "text", text: content.text }
+						}
+					}
+				} else if (
+					(item.type === "function_call" || item.type === "tool_call") &&
+					event.type === "response.output_item.done" // Only handle done events for tool calls to ensure arguments are complete
+				) {
+					// Handle complete tool/function call item
+					// Emit as tool_call for backward compatibility with non-streaming tool handling
+					const callId = item.call_id || item.tool_call_id || item.id
+					if (callId) {
+						const args = item.arguments || item.function?.arguments || item.function_arguments
 						yield {
 							type: "tool_call",
-							id: item.call_id,
-							name: item.name,
-							arguments: args,
+							id: callId,
+							name: item.name || item.function?.name || item.function_name || "",
+							arguments: typeof args === "string" ? args : "{}",
 						}
 					}
 				}
@@ -397,38 +486,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			return
 		}
 
-		if (
-			eventType === "response.tool_call_arguments.delta" ||
-			eventType === "response.function_call_arguments.delta"
-		) {
-			const callId = event.call_id
-			const cachedIdentity = callId ? this.toolCallIdentityById.get(callId) : undefined
-			const resolvedId = event.call_id || cachedIdentity?.id
-			const resolvedName = event.name || cachedIdentity?.name
-			if (!resolvedId || !resolvedName) {
-				return
-			}
-			yield {
-				type: "tool_call_partial",
-				index: 0,
-				id: resolvedId,
-				name: resolvedName,
-				arguments: event.delta,
-			}
-			return
-		}
-
-		if (
-			eventType === "response.tool_call_arguments.done" ||
-			eventType === "response.function_call_arguments.done"
-		) {
-			if (event.call_id) {
-				yield { type: "tool_call_end", id: event.call_id }
-			}
-			return
-		}
-
-		if (eventType === "response.completed" || eventType === "response.done") {
+		if (event?.type === "response.done" || event?.type === "response.completed") {
 			const usage = event.response?.usage
 			if (usage) {
 				yield {
@@ -439,19 +497,124 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			}
 			return
 		}
+
+		// Fallbacks for older formats or unexpected objects
+		if (event?.choices?.[0]?.delta?.content) {
+			yield { type: "text", text: event.choices[0].delta.content }
+			return
+		}
+
+		if (event?.usage) {
+			yield {
+				type: "usage",
+				inputTokens: event.usage.input_tokens ?? event.usage.prompt_tokens ?? 0,
+				outputTokens: event.usage.output_tokens ?? event.usage.completion_tokens ?? 0,
+			}
+		}
 	}
 
 	async completePrompt(prompt: string): Promise<string> {
 		const client = await this.getClient()
+		const { id, info } = this.getModel()
 		try {
-			const resp = await client.chat.completions.create({
-				model: this.options.apiModelId || "auto",
-				messages: [{ role: "user", content: prompt }],
-			} as any)
-			return (resp as any).choices?.[0]?.message?.content || ""
+			if (info.apiType === "CHAT_COMPLETIONS") {
+				const resp = await client.chat.completions.create({
+					model: this.options.apiModelId || "auto",
+					messages: [{ role: "user", content: prompt }],
+				} as any)
+				return (resp as any).choices?.[0]?.message?.content || ""
+			} else {
+				// Resolve reasoning effort for models that support it
+				const reasoningEffort = this.getReasoningEffort(info)
+
+				// Build request body for Responses API
+				const requestBody: any = {
+					model: id,
+					input: [
+						{
+							role: "user",
+							content: [{ type: "input_text", text: prompt }],
+						},
+					],
+					stream: false, // Non-streaming for completePrompt
+					store: false, // Don't store prompt completions
+					// Only include encrypted reasoning content when reasoning effort is set
+					...(reasoningEffort ? { include: ["reasoning.encrypted_content"] } : {}),
+				}
+
+				// Add reasoning if supported
+				if (reasoningEffort) {
+					requestBody.reasoning = {
+						effort: reasoningEffort,
+						...(this.options.enableResponsesReasoningSummary ? { summary: "auto" as const } : {}),
+					}
+				}
+
+				// Only include temperature if the model supports it
+				if (info.supportsTemperature !== false) {
+					requestBody.temperature = this.options.modelTemperature ?? OPENAI_NATIVE_DEFAULT_TEMPERATURE
+				}
+
+				// Include max_output_tokens if available
+				if (info.maxTokens) {
+					requestBody.max_output_tokens = info.maxTokens
+				}
+
+				// Enable extended prompt cache retention for eligible models
+				const promptCacheRetention = this.getPromptCacheRetention(info)
+				if (promptCacheRetention) {
+					requestBody.prompt_cache_retention = promptCacheRetention
+				}
+
+				// Make the non-streaming request
+				const response = await (client as any).responses.create(requestBody)
+
+				// Extract text from the response
+				if (response?.output && Array.isArray(response.output)) {
+					for (const outputItem of response.output) {
+						if (outputItem.type === "message" && outputItem.content) {
+							for (const content of outputItem.content) {
+								if (content.type === "output_text" && content.text) {
+									return content.text
+								}
+							}
+						}
+					}
+				}
+
+				// Fallback: check for direct text in response
+				if (response?.text) {
+					return response.text
+				}
+
+				return ""
+			}
 		} catch (err: any) {
 			throw this.decorateErrorWithOpcRequestId(err, handleOpenAIError(err, "Oracle Code Assist"))
 		}
+	}
+
+	/**
+	 * Returns the appropriate prompt cache retention policy for the given model, if any.
+	 *
+	 * The policy is driven by ModelInfo.promptCacheRetention so that model-specific details
+	 * live in the shared types layer rather than this provider. When set to "24h" and the
+	 * model supports prompt caching, extended prompt cache retention is requested.
+	 */
+	private getPromptCacheRetention(modelInfo: ModelInfo): "24h" | undefined {
+		if (!modelInfo.supportsPromptCache) return undefined
+
+		if (modelInfo.promptCacheRetention === "24h") {
+			return "24h"
+		}
+
+		return undefined
+	}
+
+	private getReasoningEffort(modelInfo: ModelInfo): ReasoningEffortExtended | undefined {
+		// Single source of truth: user setting overrides, else model default (from types).
+		const selected = (this.options.reasoningEffort as any) ?? (modelInfo.reasoningEffort as any)
+		return selected && selected !== "disable" ? (selected as any) : undefined
 	}
 
 	override getModel() {

@@ -76,7 +76,7 @@ export async function getOCAModels(
 			const supportedApis: string[] = Array.isArray(model?.model_info?.supported_api_list)
 				? model.model_info?.supported_api_list
 				: []
-			if (!supportedApis.includes("CHAT_COMPLETIONS") || !supportedApis.includes("RESPONSES")) continue
+			if (!supportedApis.includes("CHAT_COMPLETIONS") && !supportedApis.includes("RESPONSES")) continue
 
 			const info = model?.model_info || {}
 
