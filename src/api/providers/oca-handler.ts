@@ -5,6 +5,7 @@ import {
 	NATIVE_TOOL_DEFAULTS,
 	OPENAI_NATIVE_DEFAULT_TEMPERATURE,
 	ReasoningEffortExtended,
+	VerbosityLevel,
 } from "@roo-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
@@ -24,6 +25,7 @@ import { verifyFinishReason } from "./kilocode/verifyFinishReason"
 import { normalizeObjectAdditionalPropertiesFalse } from "./kilocode/openai-strict-schema"
 import { isMcpTool } from "../../utils/mcp-name"
 import { sanitizeOpenAiCallId } from "../../utils/tool-id"
+import { getModelParams } from "../transform/model-params"
 
 const DEFAULT_HEADERS = {
 	...BASE_HEADERS,
@@ -49,6 +51,9 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		super()
 		this.options = options
 		this.baseURL = process.env.OCA_API_BASE ?? DEFAULT_OCA_BASE_URL
+		if (this.options.enableResponsesReasoningSummary === undefined) {
+			this.options.enableResponsesReasoningSummary = true
+		}
 	}
 
 	private async getClient(): Promise<OpenAI> {
@@ -115,6 +120,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				modelInfo,
 				formattedInput,
 				systemPrompt,
+				reasoningEffort,
 				metadata,
 			)
 			try {
@@ -305,6 +311,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		modelInfo: ModelInfo,
 		formattedInput: any[],
 		systemPrompt: string,
+		reasoningEffort: ReasoningEffortExtended | undefined,
 		metadata?: ApiHandlerCreateMessageMetadata,
 	): any {
 		interface ResponsesRequestBody {
@@ -312,6 +319,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			input: Array<{ role: "user" | "assistant"; content: any[] } | { type: string; content: string }>
 			stream: boolean
 			reasoning?: { summary?: "auto" }
+			text?: { verbosity: VerbosityLevel }
 			temperature?: number
 			max_output_tokens?: number
 			store?: boolean
@@ -334,7 +342,15 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			stream: true,
 			store: false,
 			instructions: systemPrompt,
-			...(this.options.enableResponsesReasoningSummary ? { reasoning: { summary: "auto" as const } } : {}),
+			...(reasoningEffort ? { include: ["reasoning.encrypted_content"] } : {}),
+			...(reasoningEffort
+				? {
+						reasoning: {
+							...(reasoningEffort ? { effort: reasoningEffort } : {}),
+							...(this.options.enableResponsesReasoningSummary ? { summary: "auto" as const } : {}),
+						},
+					}
+				: {}),
 			...(modelInfo.supportsTemperature !== false &&
 				typeof this.options.modelTemperature === "number" && {
 					temperature: this.options.modelTemperature,
@@ -362,6 +378,8 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		if (metadata?.toolProtocol === "native") {
 			body.parallel_tool_calls = metadata.parallelToolCalls ?? false
 		}
+
+		// body.text = {verbosity: "medium"}
 
 		return body
 	}
@@ -635,6 +653,8 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			banner: selected?.banner,
 			supportedApiTypes: selected?.supportedApiTypes,
 			apiType: selected?.apiType,
+			supportsReasoningEffort: selected?.supportsReasoningEffort,
+			reasoningEffort: selected?.reasoningEffort,
 		}
 		const info: ModelInfo = {
 			...NATIVE_TOOL_DEFAULTS,
