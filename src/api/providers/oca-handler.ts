@@ -47,6 +47,52 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 	private pendingToolCallId: string | undefined
 	private pendingToolCallName: string | undefined
 
+	/**
+	 * Fetch cost from the Oracle Code Assist backend.
+	 * Returns total cost for the given prompt/completion tokens (units: USD).
+	 */
+	private async getApiCost(promptTokens: number, completionTokens: number): Promise<number | undefined> {
+		const client = await this.getClient()
+		const modelId = this.options.apiModelId || "auto"
+		// Token auth already handled by OpenAI instance.
+		try {
+			const resp = await fetch(`${this.baseURL}/spend/calculate`, {
+				method: "POST",
+				headers: {
+					...((client as any).defaultHeaders || {}), // OpenAI.defaultHeaders may include auth/client info
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${client.apiKey}`,
+				},
+				body: JSON.stringify({
+					completion_response: {
+						model: modelId,
+						usage: {
+							prompt_tokens: promptTokens,
+							completion_tokens: completionTokens,
+						},
+					},
+				}),
+			})
+			if (resp.ok) {
+				const data = await resp.json()
+				return typeof data.cost === "number" ? data.cost : undefined
+			}
+			console.error("Error fetching OCA spend:", resp.statusText)
+			return undefined
+		} catch (err) {
+			console.error("Exception in OCA getApiCost:", err)
+			return undefined
+		}
+	}
+
+	/**
+	 * Dynamically calculate total cost (USD) for given input/output token usage.
+	 */
+	public async calculateCost(inputTokens: number, outputTokens: number): Promise<number> {
+		const total = (await this.getApiCost(inputTokens, outputTokens)) || 0
+		return total
+	}
+
 	constructor(options: ApiHandlerOptions) {
 		super()
 		this.options = options
@@ -217,10 +263,19 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			}
 
 			if (chunk.usage) {
+				const inputTokens = chunk.usage.prompt_tokens || 0
+				const outputTokens = chunk.usage.completion_tokens || 0
+				let totalCost = undefined
+				try {
+					totalCost = await this.calculateCost(inputTokens, outputTokens)
+				} catch (e) {
+					console.error("Failed to calculate OCA usage cost", e)
+				}
 				yield {
 					type: "usage",
-					inputTokens: chunk.usage.prompt_tokens || 0,
-					outputTokens: chunk.usage.completion_tokens || 0,
+					inputTokens,
+					outputTokens,
+					totalCost,
 				}
 			}
 		}
@@ -507,10 +562,19 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		if (event?.type === "response.done" || event?.type === "response.completed") {
 			const usage = event.response?.usage
 			if (usage) {
+				const inputTokens = usage.input_tokens ?? usage.prompt_tokens ?? 0
+				const outputTokens = usage.output_tokens ?? usage.completion_tokens ?? 0
+				let totalCost = undefined
+				try {
+					totalCost = await this.calculateCost(inputTokens, outputTokens)
+				} catch (e) {
+					console.error("Failed to calculate OCA usage cost", e)
+				}
 				yield {
 					type: "usage",
-					inputTokens: usage.input_tokens ?? usage.prompt_tokens ?? 0,
-					outputTokens: usage.output_tokens ?? usage.completion_tokens ?? 0,
+					inputTokens,
+					outputTokens,
+					totalCost,
 				}
 			}
 			return
@@ -523,10 +587,19 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 		}
 
 		if (event?.usage) {
+			const inputTokens = event.usage.input_tokens ?? event.usage.prompt_tokens ?? 0
+			const outputTokens = event.usage.output_tokens ?? event.usage.completion_tokens ?? 0
+			let totalCost = undefined
+			try {
+				totalCost = await this.calculateCost(inputTokens, outputTokens)
+			} catch (e) {
+				console.error("Failed to calculate OCA usage cost", e)
+			}
 			yield {
 				type: "usage",
-				inputTokens: event.usage.input_tokens ?? event.usage.prompt_tokens ?? 0,
-				outputTokens: event.usage.output_tokens ?? event.usage.completion_tokens ?? 0,
+				inputTokens,
+				outputTokens,
+				totalCost,
 			}
 		}
 	}
