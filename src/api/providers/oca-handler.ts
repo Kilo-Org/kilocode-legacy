@@ -36,9 +36,6 @@ const DEFAULT_HEADERS = {
 export class OcaHandler extends BaseProvider implements SingleCompletionHandler {
 	private options: ApiHandlerOptions
 	private baseURL: string
-	private lastResponseId: string | undefined
-	// Complete response output array (includes reasoning items with encrypted_content)
-	private lastResponseOutput: any[] | undefined
 	/**
 	 * Some Responses streams emit tool-call argument deltas without stable call id/name.
 	 * Track the last observed tool identity from output_item events so we can still
@@ -46,6 +43,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 	 */
 	private pendingToolCallId: string | undefined
 	private pendingToolCallName: string | undefined
+	private abortController?: AbortController
 
 	/**
 	 * Fetch cost from the Oracle Code Assist backend.
@@ -153,13 +151,8 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				modelInfo.supportedApiTypes.includes("RESPONSES"))
 
 		if (prefersResponses) {
-			// -- Responses API logic, inspired by openai-native.ts --
-			this.lastResponseId = undefined
-			this.lastResponseOutput = undefined
-			this.pendingToolCallId = undefined
-			this.pendingToolCallName = undefined
+			// --- BEGIN: SDK + Fetch Fallback Pattern for OCA Responses API ---
 			const reasoningEffort = this.getReasoningEffort(modelInfo)
-
 			const formattedInput = this.formatFullConversation(systemPrompt, messages)
 			const requestBody = this.buildResponsesRequestBody(
 				modelId,
@@ -169,17 +162,97 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 				reasoningEffort,
 				metadata,
 			)
+			this.abortController = new AbortController()
 			try {
-				const stream = (await (client as any).responses.create(requestBody, {
-					signal: undefined,
-				})) as AsyncIterable<any>
-				for await (const event of stream) {
-					for await (const chunk of this.processResponsesEvent(event, modelInfo)) {
-						yield chunk
+				let stream: AsyncIterable<any> | undefined
+				try {
+					stream = await (client as any).responses.create(requestBody, {
+						signal: this.abortController.signal,
+					})
+				} catch (sdkErr) {
+					stream = undefined
+				}
+				// If SDK did not yield an AsyncIterable, fall back to manual fetch
+				if (stream && typeof (stream as any)[Symbol.asyncIterator] === "function") {
+					for await (const event of stream) {
+						if (this.abortController.signal.aborted) break
+						for await (const chunk of this.processResponsesEvent(event, modelInfo)) {
+							yield chunk
+						}
+					}
+					return
+				}
+
+				// Fallback: manual fetch + SSE parse
+				const token = await OcaTokenManager.getValid()
+				if (!token?.access_token) {
+					throw new Error("Please sign in with Oracle SSO at Settings > Providers > Oracle Code Assist.")
+				}
+				const { client: clientName, clientVersion, clientIde, clientIdeVersion } = getOcaClientInfo()
+				const fetchResp = await fetch(`${this.baseURL}/responses`, {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token.access_token}`,
+						client: clientName,
+						"client-version": clientVersion,
+						"client-ide": clientIde,
+						"client-ide-version": clientIdeVersion,
+						...DEFAULT_HEADERS,
+					},
+					body: JSON.stringify(requestBody),
+					signal: this.abortController.signal,
+				})
+				if (!fetchResp.ok) {
+					const errorText = await fetchResp.text()
+					let errorMessage = `OCA Responses API request failed (${fetchResp.status})`
+					switch (fetchResp.status) {
+						case 400:
+							errorMessage = "Invalid request to OCA Responses API. Please check your input parameters."
+							break
+						case 401:
+							errorMessage = "Authentication failed. Please check your Oracle access token."
+							break
+						case 403:
+							errorMessage = "Access denied. Your account may lack access to this endpoint."
+							break
+						case 404:
+							errorMessage = "OCA Responses API endpoint not found or misconfigured."
+							break
+						case 429:
+							errorMessage = "Rate limit exceeded. Please try again later."
+							break
+						case 500:
+							errorMessage = "OCA service error. Please try again later."
+							break
+					}
+					throw new Error(`${errorMessage} ${errorText}`)
+				}
+				if (!fetchResp.body) throw new Error("OCA Responses API: No response body")
+				const reader = fetchResp.body.getReader()
+				const decoder = new TextDecoder()
+				let buffer = ""
+				while (true) {
+					const { done, value } = await reader.read()
+					if (done) break
+					buffer += decoder.decode(value, { stream: true })
+					const lines = buffer.split("\n")
+					buffer = lines.pop() || ""
+					for (const line of lines) {
+						if (!line.startsWith("data: ")) continue
+						const data = line.slice(6).trim()
+						if (data === "[DONE]") return
+						try {
+							const event = JSON.parse(data)
+							for await (const outChunk of this.processResponsesEvent(event, modelInfo)) {
+								yield outChunk
+							}
+						} catch {}
 					}
 				}
-			} catch (err) {
-				throw handleOpenAIError(err, "Oracle Code Assist (Responses API)")
+			} catch (err: any) {
+				throw this.decorateErrorWithOpcRequestId(err, handleOpenAIError(err, "Oracle Code Assist"))
+			} finally {
+				this.abortController = undefined
 			}
 			return
 		}
@@ -441,15 +514,6 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 
 	// -- Responses API: Event processor (yield openai-responses style output chunks) --
 	private async *processResponsesEvent(event: any, modelInfo: any): AsyncIterable<any> {
-		// Capture complete output array (includes reasoning items with encrypted_content)
-		if (event?.response?.output && Array.isArray(event.response.output)) {
-			this.lastResponseOutput = event.response.output
-		}
-		// Capture top-level response id
-		if (event?.response?.id) {
-			this.lastResponseId = event.response.id as string
-		}
-
 		// Handle known streaming text deltas
 		if (event?.type === "response.text.delta" || event?.type === "response.output_text.delta") {
 			if (event?.delta) {
