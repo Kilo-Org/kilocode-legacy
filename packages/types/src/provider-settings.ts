@@ -65,6 +65,7 @@ export const dynamicProviders = [
 	"requesty",
 	"unbound",
 	"glama", // kilocode_change
+	"oca",
 	"aihubmix", // kilocode_change
 	"roo",
 	"chutes",
@@ -399,6 +400,8 @@ const openAiNativeSchema = apiModelIdProviderModelSchema.extend({
 	openAiNativeServiceTier: serviceTierSchema.optional(),
 })
 
+const ocaSchema = baseProviderSettingsSchema.extend({})
+
 const mistralSchema = apiModelIdProviderModelSchema.extend({
 	mistralApiKey: z.string().optional(),
 	mistralCodestralUrl: z.string().optional(),
@@ -641,6 +644,7 @@ export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProv
 	humanRelaySchema.merge(z.object({ apiProvider: z.literal("human-relay") })),
 	fakeAiSchema.merge(z.object({ apiProvider: z.literal("fake-ai") })),
 	xaiSchema.merge(z.object({ apiProvider: z.literal("xai") })),
+	ocaSchema.merge(z.object({ apiProvider: z.literal("oca") })),
 	// kilocode_change start
 	apertisSchema.merge(z.object({ apiProvider: z.literal("apertis") })),
 	kilocodeSchema.merge(z.object({ apiProvider: z.literal("kilocode") })),
@@ -707,6 +711,7 @@ export const providerSettingsSchema = z.object({
 	...humanRelaySchema.shape,
 	...fakeAiSchema.shape,
 	...xaiSchema.shape,
+	...ocaSchema.shape,
 	...groqSchema.shape,
 	...basetenSchema.shape,
 	...corethinkSchema.shape,
@@ -831,6 +836,7 @@ export const modelIdKeysByProvider: Record<TypicalProvider, ModelIdKey> = {
 	fireworks: "apiModelId",
 	featherless: "apiModelId",
 	"io-intelligence": "ioIntelligenceModelId",
+	oca: "apiModelId",
 	roo: "apiModelId",
 	"vercel-ai-gateway": "vercelAiGatewayModelId",
 	"virtual-quota-fallback": "apiModelId",
@@ -957,6 +963,7 @@ export const MODELS_BY_PROVIDER: Record<
 	},
 	"qwen-code": { id: "qwen-code", label: "Qwen Code", models: Object.keys(qwenCodeModels) },
 	roo: { id: "roo", label: "Roo Code Router", models: [] },
+	oca: { id: "oca", label: "Oracle Code Assist", models: [] },
 	sambanova: {
 		id: "sambanova",
 		label: "SambaNova",
