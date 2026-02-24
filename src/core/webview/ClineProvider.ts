@@ -1993,8 +1993,8 @@ export class ClineProvider
 		try {
 			// get the task directory full path
 			const { taskDirPath } = await this.getTaskWithId(id)
-
-			// remove task from stack if it's the current task
+	
+				// remove task from stack if it's the current task
 			if (id === this.getCurrentTask()?.taskId) {
 				// Close the current task instance; delegation flows will be handled via metadata if applicable.
 				await this.removeClineFromStack()
