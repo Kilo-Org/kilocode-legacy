@@ -470,7 +470,6 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			stream: true,
 			store: false,
 			instructions: systemPrompt,
-			...(reasoningEffort ? { include: ["reasoning.encrypted_content"] } : {}),
 			...(reasoningEffort
 				? {
 						reasoning: {
@@ -693,8 +692,6 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 					],
 					stream: false, // Non-streaming for completePrompt
 					store: false, // Don't store prompt completions
-					// Only include encrypted reasoning content when reasoning effort is set
-					...(reasoningEffort ? { include: ["reasoning.encrypted_content"] } : {}),
 				}
 
 				// Add reasoning if supported
@@ -768,6 +765,9 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 
 	private getReasoningEffort(modelInfo: ModelInfo): ReasoningEffortExtended | undefined {
 		// Single source of truth: user setting overrides, else model default (from types).
+		if (!modelInfo.supportsReasoningEffort) {
+			return undefined
+		}
 		const selected = (this.options.reasoningEffort as any) ?? (modelInfo.reasoningEffort as any)
 		return selected && selected !== "disable" ? (selected as any) : undefined
 	}
