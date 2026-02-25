@@ -25,6 +25,8 @@ export { OpenAiCompatibleResponsesHandler } from "./openai-responses" // kilocod
 export { OpenAICompatibleHandler } from "./openai-compatible"
 export type { OpenAICompatibleConfig } from "./openai-compatible"
 export { OpenRouterHandler } from "./openrouter"
+export { PoeHandler } from "./poe" // kilocode_change
+export { ZenMuxHandler } from "./zenmux" // kilocode_change
 export { QwenCodeHandler } from "./qwen-code"
 export { RequestyHandler } from "./requesty"
 export { SambaNovaHandler } from "./sambanova"
@@ -36,6 +38,8 @@ export { VirtualQuotaFallbackHandler } from "./virtual-quota-fallback"
 export { SyntheticHandler } from "./synthetic"
 export { InceptionLabsHandler } from "./inception"
 export { SapAiCoreHandler } from "./sap-ai-core"
+export { AihubmixHandler } from "./aihubmix"
+export { ApertisHandler } from "./apertis"
 // kilocode_change end
 export { VsCodeLmHandler } from "./vscode-lm"
 export { XAIHandler } from "./xai"
@@ -48,3 +52,4 @@ export { DeepInfraHandler } from "./deepinfra"
 export { OcaHandler } from "./oca-handler"
 export { MiniMaxHandler } from "./minimax"
 export { BasetenHandler } from "./baseten"
+export { CorethinkHandler } from "./corethink"

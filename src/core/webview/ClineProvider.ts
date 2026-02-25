@@ -1417,7 +1417,7 @@ export class ClineProvider
 	 * Handle switching to a new mode, including updating the associated API configuration
 	 * @param newMode The mode to switch to
 	 */
-	public async handleModeSwitch(newMode: Mode) {
+	public async handleModeSwitch(newMode: Mode, options?: { reviewScope?: "uncommitted" | "branch" }) {
 		const task = this.getCurrentTask()
 
 		if (task) {
@@ -1498,7 +1498,12 @@ export class ClineProvider
 
 		// kilocode_change start: Review mode scope selection
 		if (newMode === "review") {
-			await this.triggerReviewScopeSelection()
+			if (options?.reviewScope) {
+				// Skip the scope dialog and start review directly with the specified scope
+				await this.handleReviewScopeSelected(options.reviewScope)
+			} else {
+				await this.triggerReviewScopeSelection()
+			}
 		}
 		// kilocode_change end
 	}
@@ -1993,8 +1998,8 @@ export class ClineProvider
 		try {
 			// get the task directory full path
 			const { taskDirPath } = await this.getTaskWithId(id)
-	
-				// remove task from stack if it's the current task
+
+			// remove task from stack if it's the current task
 			if (id === this.getCurrentTask()?.taskId) {
 				// Close the current task instance; delegation flows will be handled via metadata if applicable.
 				await this.removeClineFromStack()
@@ -2071,9 +2076,10 @@ export class ClineProvider
 	async postRulesDataToWebview() {
 		const workspacePath = this.cwd
 		if (workspacePath) {
+			const mode = this.contextProxy.getGlobalState("mode") as string | undefined
 			this.postMessageToWebview({
 				type: "rulesData",
-				...(await getEnabledRules(workspacePath, this.contextProxy, this.context)),
+				...(await getEnabledRules(workspacePath, this.contextProxy, this.context, mode)),
 			})
 		}
 	}
@@ -2397,6 +2403,7 @@ export class ClineProvider
 				: undefined,
 			clineMessages: this.getCurrentTask()?.clineMessages || [],
 			currentTaskTodos: this.getCurrentTask()?.todoList || [],
+			currentTaskCumulativeCost: this.getCurrentTask()?.getCumulativeTotalCost(), // kilocode_change
 			messageQueue: this.getCurrentTask()?.messageQueueService?.messages,
 			taskHistoryFullLength: taskHistory.length, // kilocode_change
 			taskHistoryVersion: this.kiloCodeTaskHistoryVersion, // kilocode_change
@@ -3391,6 +3398,13 @@ export class ClineProvider
 				return
 			}
 
+			// Phase 1: Show dialog immediately with loading state
+			await this.postMessageToWebview({
+				type: "askReviewScope",
+				reviewScopeInfo: undefined,
+			})
+
+			// Phase 2: Compute scope info and hydrate
 			const { ReviewService } = await import("../../services/review")
 			const reviewService = new ReviewService({ cwd })
 			const scopeInfo = await reviewService.getScopeInfo()

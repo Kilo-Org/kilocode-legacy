@@ -235,6 +235,7 @@ vi.mock("../../task/Task", () => ({
 		setRootTask: vi.fn(),
 		taskId: options?.historyItem?.id || "test-task-id",
 		emit: vi.fn(),
+		getCumulativeTotalCost: vi.fn().mockReturnValue(0), // kilocode_change
 	})),
 }))
 
@@ -379,6 +380,7 @@ describe("ClineProvider", () => {
 				setRootTask: vi.fn(),
 				taskId: options?.historyItem?.id || "test-task-id",
 				emit: vi.fn(),
+				getCumulativeTotalCost: vi.fn().mockReturnValue(0), // kilocode_change
 			}
 
 			Object.defineProperty(task, "messageManager", {
@@ -1703,6 +1705,40 @@ describe("ClineProvider", () => {
 			// Verify state was posted to webview
 			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "state" }))
 		})
+
+		// kilocode_change start
+		test("skips review scope dialog and calls handleReviewScopeSelected when reviewScope option is provided", async () => {
+			;(provider as any).providerSettingsManager = {
+				getModeConfigId: vi.fn().mockResolvedValue(undefined),
+				listConfig: vi.fn().mockResolvedValue([]),
+				setModeConfig: vi.fn(),
+			} as any
+
+			const triggerSpy = vi.spyOn(provider, "triggerReviewScopeSelection").mockResolvedValue()
+			const handleScopeSpy = vi.spyOn(provider, "handleReviewScopeSelected").mockResolvedValue()
+
+			await provider.handleModeSwitch("review", { reviewScope: "uncommitted" })
+
+			expect(triggerSpy).not.toHaveBeenCalled()
+			expect(handleScopeSpy).toHaveBeenCalledWith("uncommitted")
+		})
+
+		test("shows review scope dialog when switching to review mode without reviewScope option", async () => {
+			;(provider as any).providerSettingsManager = {
+				getModeConfigId: vi.fn().mockResolvedValue(undefined),
+				listConfig: vi.fn().mockResolvedValue([]),
+				setModeConfig: vi.fn(),
+			} as any
+
+			const triggerSpy = vi.spyOn(provider, "triggerReviewScopeSelection").mockResolvedValue()
+			const handleScopeSpy = vi.spyOn(provider, "handleReviewScopeSelected").mockResolvedValue()
+
+			await provider.handleModeSwitch("review")
+
+			expect(triggerSpy).toHaveBeenCalled()
+			expect(handleScopeSpy).not.toHaveBeenCalled()
+		})
+		// kilocode_change end
 	})
 
 	describe("createTaskWithHistoryItem mode validation", () => {
@@ -2783,12 +2819,18 @@ describe("ClineProvider - Router Models", () => {
 			apiKey: "litellm-key",
 			baseUrl: "http://localhost:4000",
 		})
-		expect(getModels).toHaveBeenCalledWith({ provider: "chutes" })
+		expect(getModels).toHaveBeenCalledWith({ provider: "chutes", apiKey: undefined })
+		expect(getModels).toHaveBeenCalledWith({
+			provider: "zenmux",
+			apiKey: undefined,
+			baseUrl: "https://zenmux.ai/api/v1",
+		})
 
 		// Verify response was sent
 		expect(mockPostMessage).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				gemini: mockModels, // kilocode_change
@@ -2801,6 +2843,7 @@ describe("ClineProvider - Router Models", () => {
 				litellm: mockModels,
 				kilocode: mockModels,
 				"nano-gpt": mockModels, // kilocode_change
+				aihubmix: mockModels, // kilocode_change
 				ollama: mockModels, // kilocode_change
 				lmstudio: {},
 				"vercel-ai-gateway": mockModels,
@@ -2809,6 +2852,8 @@ describe("ClineProvider - Router Models", () => {
 				"sap-ai-core": {}, // kilocode_change
 				huggingface: {},
 				"io-intelligence": {},
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 			},
 			values: undefined,
 		})
@@ -2856,11 +2901,14 @@ describe("ClineProvider - Router Models", () => {
 			.mockResolvedValueOnce(mockModels) // vercel-ai-gateway success
 			.mockResolvedValueOnce(mockModels) // deepinfra success
 			.mockResolvedValueOnce(mockModels) // nano-gpt success // kilocode_change
+			.mockResolvedValueOnce(mockModels) // kilocode_change: aihubmix
 			.mockResolvedValueOnce(mockModels) // kilocode_change: ovhcloud
 			.mockResolvedValueOnce(mockModels) // kilocode_change: inception success
 			.mockResolvedValueOnce(mockModels) // kilocode_change: synthetic success
 			.mockResolvedValueOnce(mockModels) // roo success
 			.mockRejectedValueOnce(new Error("Chutes API error")) // chutes fail
+			.mockResolvedValueOnce(mockModels) // kilocode_change: poe success
+			.mockResolvedValueOnce(mockModels) // zenmux success
 			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm fail
 
 		await messageHandler({ type: "requestRouterModels" })
@@ -2869,6 +2917,7 @@ describe("ClineProvider - Router Models", () => {
 		expect(mockPostMessage).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				gemini: mockModels, // kilocode_change
@@ -2882,6 +2931,7 @@ describe("ClineProvider - Router Models", () => {
 				litellm: {},
 				kilocode: {},
 				"nano-gpt": mockModels, // kilocode_change
+				aihubmix: mockModels, // kilocode_change
 				"vercel-ai-gateway": mockModels,
 				ovhcloud: mockModels, // kilocode_change
 				inception: mockModels, // kilocode_change
@@ -2889,6 +2939,8 @@ describe("ClineProvider - Router Models", () => {
 				"sap-ai-core": {}, // kilocode_change
 				huggingface: {},
 				"io-intelligence": {},
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 			},
 			values: undefined,
 		})
@@ -3025,6 +3077,7 @@ describe("ClineProvider - Router Models", () => {
 		expect(mockPostMessage).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				gemini: mockModels, // kilocode_change
@@ -3036,6 +3089,7 @@ describe("ClineProvider - Router Models", () => {
 				litellm: {},
 				kilocode: mockModels,
 				"nano-gpt": mockModels, // kilocode_change
+				aihubmix: mockModels, // kilocode_change
 				ollama: mockModels, // kilocode_change
 				lmstudio: {},
 				"vercel-ai-gateway": mockModels,
@@ -3045,6 +3099,8 @@ describe("ClineProvider - Router Models", () => {
 				"sap-ai-core": {}, // kilocode_change
 				huggingface: {},
 				"io-intelligence": {},
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 			},
 			values: undefined,
 		})

@@ -46,6 +46,11 @@
 		"message": "サインインまたはアカウントを作成して、500以上のモデルにアクセスし、原価でクレジットを使用するか、独自のキーを使用できます。",
 		"loginButton": "サインイン"
 	},
+	"promotionError": {
+		"title": "続けるにはサインアップが必要です",
+		"message": "無料でサインアップして、500以上のモデルを探索しましょう。2分で完了、クレジットカード不要。または後でまた来てください。",
+		"signUpButton": "登録する"
+	},
 	"pricing": {
 		"costUnknown": "コスト不明",
 		"costUnknownDescription": "APIプロバイダーがコストデータを提供しなかったか、リクエストがキャンセルされました。",
@@ -250,7 +255,7 @@
 			"idea7": "マウスジェスチャーに合わせて動く落ち着いたインタラクティブな星空を作成"
 		}
 	},
-	"ghost": {
+	"autocomplete": {
 		"title": "Autocomplete",
 		"settings": {
 			"codeEditorSuggestions": "コードエディタの提案",

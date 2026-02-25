@@ -111,6 +111,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		clineMessages: messages,
 		currentTaskItem,
 		currentTaskTodos,
+		currentTaskCumulativeCost, // kilocode_change
 		taskHistoryFullLength, // kilocode_change
 		taskHistoryVersion, // kilocode_change
 		apiConfiguration,
@@ -176,7 +177,19 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const modifiedMessages = useMemo(() => combineApiRequests(combineCommandSequences(messages.slice(1))), [messages])
 
 	// Has to be after api_req_finished are all reduced into api_req_started messages.
-	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages])
+	// kilocode_change start
+	const apiMetrics = useMemo(() => {
+		const metrics = getApiMetrics(modifiedMessages)
+		// use cumulative cost from backend if available, otherwise fall back to calculated cost
+		if (currentTaskCumulativeCost !== undefined) {
+			return {
+				...metrics,
+				totalCost: currentTaskCumulativeCost,
+			}
+		}
+		return metrics
+	}, [modifiedMessages, currentTaskCumulativeCost])
+	// kilocode_change end
 
 	const [inputValue, setInputValue] = useState("")
 	const inputValueRef = useRef(inputValue)
@@ -991,10 +1004,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					break
 				// kilocode_change start: Review mode
 				case "askReviewScope":
-					if (message.reviewScopeInfo) {
-						setReviewScopeInfo(message.reviewScopeInfo)
-						setShowReviewScopeSelector(true)
-					}
+					setReviewScopeInfo(message.reviewScopeInfo ?? null)
+					setShowReviewScopeSelector(true)
 					break
 				// kilocode_change end: Review mode
 			}
@@ -1369,6 +1380,27 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				markFollowUpAsAnswered()
 			}
 
+			// kilocode_change start - Handle review mode suggestions from completion.
+			// Close the pending completion_result ask, then switch to review mode
+			// with a reviewScope so the backend skips the scope dialog and starts
+			// the review directly (via handleReviewScopeSelected). The mode switch
+			// itself creates a new task, which implicitly clears the old context.
+			// Shift+click is a no-op for review suggestions (they can't be appended to text).
+			// Guard on clineAsk to ensure this only triggers for completion suggestions,
+			// not LLM-generated follow-up suggestions that might also have mode: "review".
+			if (suggestion.mode === "review" && clineAsk === "completion_result") {
+				if (!event?.shiftKey) {
+					const isManualClick = !!event
+					if (isManualClick || alwaysAllowModeSwitch) {
+						vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+						setMode("review")
+						vscode.postMessage({ type: "mode", text: "review", reviewScope: "uncommitted" })
+					}
+				}
+				return
+			}
+			// kilocode_change end
+
 			// Check if we need to switch modes
 			if (suggestion.mode) {
 				// Only switch modes if it's a manual click (event exists) or auto-approval is allowed
@@ -1393,7 +1425,15 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				setInputValue(preservedInput)
 			}
 		},
-		[handleSendMessage, setInputValue, switchToMode, alwaysAllowModeSwitch, clineAsk, markFollowUpAsAnswered],
+		[
+			handleSendMessage,
+			setInputValue,
+			switchToMode,
+			alwaysAllowModeSwitch,
+			clineAsk,
+			markFollowUpAsAnswered,
+			setMode,
+		],
 	)
 
 	const handleBatchFileResponse = useCallback((response: { [key: string]: boolean }) => {
@@ -1652,23 +1692,21 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			) : (
 				<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 relative">
 					{/* Moved Task Bar Header Here */}
-					{taskHistoryFullLength !== 0 && (
-						<div className="flex text-vscode-descriptionForeground w-full mx-auto px-5 pt-3">
-							<div className="flex items-center gap-1 cursor-pointer" onClick={toggleExpanded}>
-								{taskHistoryFullLength < 10 && (
-									<span className={`font-medium text-xs `}>{t("history:recentTasks")}</span>
-								)}
-								<span
-									className={`codicon  ${isExpanded ? "codicon-eye" : "codicon-eye-closed"} scale-90`}
-								/>
+					<div className="flex items-center justify-between w-full mx-auto px-5 pt-3">
+						{taskHistoryFullLength !== 0 && (
+							<div className="flex text-vscode-descriptionForeground">
+								<div className="flex items-center gap-1 cursor-pointer" onClick={toggleExpanded}>
+									{taskHistoryFullLength < 10 && (
+										<span className={`font-medium text-xs `}>{t("history:recentTasks")}</span>
+									)}
+									<span
+										className={`codicon  ${isExpanded ? "codicon-eye" : "codicon-eye-closed"} scale-90`}
+									/>
+								</div>
 							</div>
-						</div>
-					)}
-					{!showTelemetryBanner && (
-						<div>
-							<OrganizationSelector className="absolute top-2 right-3" />
-						</div>
-					)}
+						)}
+						{!showTelemetryBanner && <OrganizationSelector className="w-40 shrink-0 ml-auto" />}
+					</div>
 					{/* kilocode_change start: changed the classes to support notifications */}
 					<div className="w-full h-full flex flex-col gap-4 px-3.5 transition-all duration-300">
 						{/* kilocode_change end */}

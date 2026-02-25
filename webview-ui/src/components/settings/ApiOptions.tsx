@@ -9,6 +9,7 @@ import {
 	type ProviderSettings,
 	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
 	openRouterDefaultModelId,
+	zenmuxDefaultModelId, // kilocode_change
 	requestyDefaultModelId,
 	glamaDefaultModelId, // kilocode_change
 	unboundDefaultModelId,
@@ -23,6 +24,7 @@ import {
 	deepSeekDefaultModelId,
 	moonshotDefaultModelId,
 	// kilocode_change start
+	apertisDefaultModelId,
 	syntheticDefaultModelId,
 	ovhCloudAiEndpointsDefaultModelId,
 	inceptionDefaultModelId,
@@ -34,6 +36,7 @@ import {
 	cerebrasDefaultModelId,
 	chutesDefaultModelId,
 	basetenDefaultModelId,
+	corethinkDefaultModelId,
 	bedrockDefaultModelId,
 	vertexDefaultModelId,
 	sambaNovaDefaultModelId,
@@ -47,6 +50,7 @@ import {
 	deepInfraDefaultModelId,
 	minimaxDefaultModelId,
 	nanoGptDefaultModelId, //kilocode_change
+	poeDefaultModelId, // kilocode_change
 } from "@roo-code/types"
 
 import { vscode } from "@src/utils/vscode"
@@ -76,7 +80,9 @@ import {
 
 import {
 	Anthropic,
+	Apertis, // kilocode_change
 	Baseten,
+	Corethink,
 	Bedrock,
 	Cerebras,
 	Chutes,
@@ -98,6 +104,7 @@ import {
 	OpenAICompatible,
 	OpenAICodex,
 	OpenRouter,
+	ZenMux, // kilocode_change
 	QwenCode,
 	Requesty,
 	Roo,
@@ -112,6 +119,7 @@ import {
 	OvhCloudAiEndpoints,
 	Inception,
 	SapAiCore,
+	Aihubmix,
 	// kilocode_change end
 	ZAi,
 	Fireworks,
@@ -120,6 +128,7 @@ import {
 	DeepInfra,
 	OCA,
 	MiniMax,
+	Poe, // kilocode_change
 } from "./providers"
 
 import { MODELS_BY_PROVIDER, PROVIDERS } from "./constants"
@@ -237,6 +246,8 @@ const ApiOptions = ({
 		googleGeminiBaseUrl: apiConfiguration?.googleGeminiBaseUrl,
 		chutesApiKey: apiConfiguration?.chutesApiKey,
 		syntheticApiKey: apiConfiguration?.syntheticApiKey,
+		zenmuxBaseUrl: apiConfiguration?.zenmuxBaseUrl,
+		zenmuxApiKey: apiConfiguration?.zenmuxApiKey,
 	})
 
 	//const { data: openRouterModelProviders } = useOpenRouterModelProviders(
@@ -293,6 +304,7 @@ const ApiOptions = ({
 				selectedProvider === "deepinfra" ||
 				selectedProvider === "chutes" || // kilocode_change
 				selectedProvider === "synthetic" || // kilocode_change
+				selectedProvider === "poe" || // kilocode_change
 				selectedProvider === "roo"
 			) {
 				vscode.postMessage({ type: "requestRouterModels" })
@@ -331,11 +343,23 @@ const ApiOptions = ({
 		if (!models) return []
 
 		const filteredModels = filterModels(models, selectedProvider, organizationAllowList)
+		// kilocode_change start
+		const modelsAllowedByEndpoint =
+			selectedProvider === "moonshot" && filteredModels
+				? Object.fromEntries(
+						Object.entries(filteredModels).filter(
+							([modelId]) =>
+								modelId !== "kimi-for-coding" ||
+								apiConfiguration.moonshotBaseUrl === "https://api.kimi.com/coding/v1",
+						),
+					)
+				: filteredModels
+		// kilocode_change end
 
 		// Include the currently selected model even if deprecated (so users can see what they have selected)
 		// But filter out other deprecated models from being newly selectable
-		const availableModels = filteredModels
-			? Object.entries(filteredModels)
+		const availableModels = modelsAllowedByEndpoint
+			? Object.entries(modelsAllowedByEndpoint)
 					.filter(([modelId, modelInfo]) => {
 						// Always include the currently selected model
 						if (modelId === selectedModelId) return true
@@ -349,7 +373,7 @@ const ApiOptions = ({
 			: []
 
 		return availableModels
-	}, [selectedProvider, organizationAllowList, selectedModelId])
+	}, [selectedProvider, organizationAllowList, selectedModelId, apiConfiguration.moonshotBaseUrl])
 
 	const onProviderChange = useCallback(
 		(value: ProviderName) => {
@@ -413,6 +437,7 @@ const ApiOptions = ({
 			> = {
 				deepinfra: { field: "deepInfraModelId", default: deepInfraDefaultModelId },
 				openrouter: { field: "openRouterModelId", default: openRouterDefaultModelId },
+				zenmux: { field: "zenmuxModelId", default: zenmuxDefaultModelId },
 				glama: { field: "glamaModelId", default: glamaDefaultModelId }, // kilocode_change
 				unbound: { field: "unboundModelId", default: unboundDefaultModelId },
 				requesty: { field: "requestyModelId", default: requestyDefaultModelId },
@@ -434,13 +459,15 @@ const ApiOptions = ({
 				groq: { field: "apiModelId", default: groqDefaultModelId },
 				chutes: { field: "apiModelId", default: chutesDefaultModelId },
 				baseten: { field: "apiModelId", default: basetenDefaultModelId },
+				corethink: { field: "apiModelId", default: corethinkDefaultModelId },
 				bedrock: { field: "apiModelId", default: bedrockDefaultModelId },
 				vertex: { field: "apiModelId", default: vertexDefaultModelId },
 				sambanova: { field: "apiModelId", default: sambaNovaDefaultModelId },
 				zai: {
 					field: "apiModelId",
 					default:
-						apiConfiguration.zaiApiLine === "china_coding"
+						// kilocode_change - china_api uses mainland model catalog too.
+						apiConfiguration.zaiApiLine === "china_coding" || apiConfiguration.zaiApiLine === "china_api"
 							? mainlandZAiDefaultModelId
 							: internationalZAiDefaultModelId,
 				},
@@ -453,10 +480,12 @@ const ApiOptions = ({
 				ollama: { field: "ollamaModelId" },
 				lmstudio: { field: "lmStudioModelId" },
 				// kilocode_change start
+				apertis: { field: "apertisModelId", default: apertisDefaultModelId },
 				kilocode: { field: "kilocodeModel", default: kilocodeDefaultModel },
 				synthetic: { field: "apiModelId", default: syntheticDefaultModelId },
 				ovhcloud: { field: "ovhCloudAiEndpointsModelId", default: ovhCloudAiEndpointsDefaultModelId },
 				inception: { field: "inceptionLabsModelId", default: inceptionDefaultModelId },
+				poe: { field: "poeModelId", default: poeDefaultModelId },
 				// kilocode_change end
 			}
 
@@ -599,6 +628,21 @@ const ApiOptions = ({
 				/>
 			)}
 
+			{/* kilocode_change start */}
+			{selectedProvider === "zenmux" && (
+				<ZenMux
+					apiConfiguration={apiConfiguration}
+					setApiConfigurationField={setApiConfigurationField}
+					routerModels={routerModels}
+					selectedModelId={selectedModelId}
+					uriScheme={uriScheme}
+					simplifySettings={fromWelcomeView}
+					organizationAllowList={organizationAllowList}
+					modelValidationError={modelValidationError}
+				/>
+			)}
+			{/* kilocode_change end */}
+
 			{selectedProvider === "oca" && (
 				<OCA
 					apiConfiguration={apiConfiguration}
@@ -629,6 +673,21 @@ const ApiOptions = ({
 						setApiConfigurationField={setApiConfigurationField}
 						routerModels={routerModels}
 						uriScheme={uriScheme}
+						organizationAllowList={organizationAllowList}
+						modelValidationError={modelValidationError}
+						simplifySettings={fromWelcomeView}
+					/>
+				)
+				/* kilocode_change end */
+			}
+
+			{
+				/* kilocode_change start */
+				selectedProvider === "aihubmix" && (
+					<Aihubmix
+						apiConfiguration={apiConfiguration}
+						setApiConfigurationField={setApiConfigurationField}
+						routerModels={routerModels}
 						organizationAllowList={organizationAllowList}
 						modelValidationError={modelValidationError}
 						simplifySettings={fromWelcomeView}
@@ -673,6 +732,19 @@ const ApiOptions = ({
 			)}
 			{/* kilocode_change end */}
 
+			{/* kilocode_change start */}
+			{selectedProvider === "poe" && (
+				<Poe
+					apiConfiguration={apiConfiguration}
+					setApiConfigurationField={setApiConfigurationField}
+					routerModels={routerModels}
+					refetchRouterModels={refetchRouterModels}
+					organizationAllowList={organizationAllowList}
+					modelValidationError={modelValidationError}
+				/>
+			)}
+			{/* kilocode_change end */}
+
 			{selectedProvider === "anthropic" && (
 				<Anthropic
 					apiConfiguration={apiConfiguration}
@@ -680,6 +752,12 @@ const ApiOptions = ({
 					simplifySettings={fromWelcomeView}
 				/>
 			)}
+
+			{/* kilocode_change start */}
+			{selectedProvider === "apertis" && (
+				<Apertis apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
+			)}
+			{/* kilocode_change end */}
 
 			{selectedProvider === "claude-code" && (
 				<ClaudeCode
@@ -730,6 +808,14 @@ const ApiOptions = ({
 
 			{selectedProvider === "baseten" && (
 				<Baseten
+					apiConfiguration={apiConfiguration}
+					setApiConfigurationField={setApiConfigurationField}
+					simplifySettings={fromWelcomeView}
+				/>
+			)}
+
+			{selectedProvider === "corethink" && (
+				<Corethink
 					apiConfiguration={apiConfiguration}
 					setApiConfigurationField={setApiConfigurationField}
 					simplifySettings={fromWelcomeView}

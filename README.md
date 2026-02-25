@@ -1,4 +1,8 @@
 <p align="center">
+  <strong>⚠️ This repository is no longer actively maintained. Development has moved to <a href="https://github.com/Kilo-Org/kilocode">github.com/Kilo-Org/kilocode</a>.</strong>
+</p>
+
+<p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=kilocode.Kilo-Code"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
   <a href="https://x.com/kilocode"><img src="https://img.shields.io/badge/kilocode-000000?style=flat&logo=x&logoColor=white" alt="X (Twitter)"></a>
   <a href="https://blog.kilo.ai"><img src="https://img.shields.io/badge/Blog-555?style=flat&logo=substack&logoColor=white" alt="Substack Blog"></a>
@@ -9,7 +13,7 @@
 # 🚀 Kilo
 
 > Kilo is the all-in-one agentic engineering platform. Build, ship, and iterate faster with the most popular open source coding agent.
-> #1 on OpenRouter. 1M+ Kilo Coders. 20T+ tokens processed
+> #1 on OpenRouter. 1.5M+ Kilo Coders. 25T+ tokens processed
 
 - ✨ Generate code from natural language
 - ✅ Checks its own work
@@ -66,7 +70,7 @@ You’re free to use, modify, and distribute this code, including for commercial
 
 ## Contributing
 
-Contributions are welcome, and they are greatly appreciated! Get started by reading our [Contributing Guide](CONTRIBUTING.md). Or join our [Discord](https://discord.gg/kilocode) to chat with the team and community.
+Contributions are welcome, and they are greatly appreciated! Get started by reading our [Contributing Guide](CONTRIBUTING.md). Or join our [Discord](https://kilo.ai/discord) to chat with the team and community.
 
 Thanks to all the contributors who help make Kilo better!
 

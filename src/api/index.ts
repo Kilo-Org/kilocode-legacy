@@ -11,6 +11,8 @@ import {
 	AwsBedrockHandler,
 	CerebrasHandler,
 	OpenRouterHandler,
+	PoeHandler, // kilocode_change
+	ZenMuxHandler, // kilocode_change
 	VertexHandler,
 	AnthropicVertexHandler,
 	OpenAiHandler,
@@ -37,6 +39,8 @@ import {
 	SyntheticHandler,
 	OVHcloudAIEndpointsHandler,
 	SapAiCoreHandler,
+	AihubmixHandler,
+	ApertisHandler,
 	// kilocode_change end
 	ClaudeCodeHandler,
 	QwenCodeHandler,
@@ -52,6 +56,7 @@ import {
 	MiniMaxHandler,
 	OcaHandler,
 	BasetenHandler,
+	CorethinkHandler,
 	OpenAiCompatibleResponsesHandler, // kilocode_change
 } from "./providers"
 // kilocode_change start
@@ -97,6 +102,13 @@ export interface ApiHandlerCreateMessageMetadata {
 	 * @kilocode-only
 	 */
 	projectId?: string
+	/**
+	 * KiloCode-specific: Feature attribution for microdollar usage tracking.
+	 * When set, overrides the default feature detection in customRequestOptions().
+	 * Examples: 'parallel-agent', 'autocomplete'
+	 * @kilocode-only
+	 */
+	feature?: string
 	// kilocode_change end
 	/**
 	 * Optional array of tool definitions to pass to the model.
@@ -181,6 +193,12 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 		// kilocode_change end
 		case "openrouter":
 			return new OpenRouterHandler(options)
+		// kilocode_change start
+		case "poe":
+			return new PoeHandler(options)
+		// kilocode_change end
+		case "zenmux": // kilocode_change
+			return new ZenMuxHandler(options) // kilocode_change
 		case "bedrock":
 			return new AwsBedrockHandler(options)
 		case "vertex":
@@ -254,6 +272,10 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new OVHcloudAIEndpointsHandler(options)
 		case "sap-ai-core":
 			return new SapAiCoreHandler(options)
+		case "aihubmix":
+			return new AihubmixHandler(options)
+		case "apertis":
+			return new ApertisHandler(options)
 		// kilocode_change end
 		case "io-intelligence":
 			return new IOIntelligenceHandler(options)
@@ -271,6 +293,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new MiniMaxHandler(options)
 		case "baseten":
 			return new BasetenHandler(options)
+		case "corethink":
+			return new CorethinkHandler(options)
 		default:
 			apiProvider satisfies undefined
 			return new AnthropicHandler(options)

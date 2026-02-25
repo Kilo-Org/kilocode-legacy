@@ -108,6 +108,9 @@ export const shouldUseReasoningEffort = ({
 export const DEFAULT_HYBRID_REASONING_MODEL_MAX_TOKENS = 16_384
 export const DEFAULT_HYBRID_REASONING_MODEL_THINKING_TOKENS = 8_192
 export const GEMINI_25_PRO_MIN_THINKING_TOKENS = 128
+// kilocode_change start
+const QWEN3_MAX_THINKING_OUTPUT_TOKEN_LIMIT = 32_768
+// kilocode_change end
 
 // Max Tokens
 
@@ -120,7 +123,7 @@ export const getModelMaxOutputTokens = ({
 	modelId: string
 	model: ModelInfo
 	settings?: ProviderSettings
-	format?: "anthropic" | "openai" | "gemini" | "openrouter"
+	format?: "anthropic" | "openai" | "gemini" | "openrouter" | "zenmux"
 }): number | undefined => {
 	if (shouldUseReasoningBudget({ model, settings })) {
 		return settings?.modelMaxTokens || DEFAULT_HYBRID_REASONING_MODEL_MAX_TOKENS
@@ -129,7 +132,8 @@ export const getModelMaxOutputTokens = ({
 	const isAnthropicContext =
 		modelId.includes("claude") ||
 		format === "anthropic" ||
-		(format === "openrouter" && modelId.startsWith("anthropic/"))
+		(format === "openrouter" && modelId.startsWith("anthropic/")) ||
+		(format === "zenmux" && modelId.startsWith("anthropic/"))
 
 	// For "Hybrid" reasoning models, discard the model's actual maxTokens for Anthropic contexts
 	/* kilocode_change: don't limit Anthropic model output, no idea why this was done before
@@ -142,6 +146,10 @@ export const getModelMaxOutputTokens = ({
 		return ANTHROPIC_DEFAULT_MAX_TOKENS
 	}
 
+	// kilocode_change start
+	const isQwen3MaxThinkingModel = modelId.toLowerCase().includes("qwen3-max-thinking")
+	// kilocode_change end
+
 	// If model has explicit maxTokens, clamp it to 20% of the context window
 	// Exception: GPT-5 models should use their exact configured max output tokens
 	if (model.maxTokens) {
@@ -153,8 +161,17 @@ export const getModelMaxOutputTokens = ({
 			return model.maxTokens
 		}
 
+		const contextCappedMaxTokens = Math.min(model.maxTokens, Math.ceil(model.contextWindow * 0.2))
+
+		// kilocode_change start
+		// qwen3-max-thinking currently rejects values above 32,768 (upstream provider constraint).
+		if (isQwen3MaxThinkingModel) {
+			return Math.min(contextCappedMaxTokens, QWEN3_MAX_THINKING_OUTPUT_TOKEN_LIMIT)
+		}
+		// kilocode_change end
+
 		// All other models are clamped to 20% of context window
-		return Math.min(model.maxTokens, Math.ceil(model.contextWindow * 0.2))
+		return contextCappedMaxTokens
 	}
 
 	// For non-Anthropic formats without explicit maxTokens, return undefined
@@ -181,6 +198,7 @@ type CommonFetchParams = {
 const dynamicProviderExtras = {
 	gemini: {} as { apiKey?: string; baseUrl?: string }, // kilocode_change
 	openrouter: {} as {}, // eslint-disable-line @typescript-eslint/no-empty-object-type
+	zenmux: {} as { apiKey?: string; baseUrl?: string },
 	"vercel-ai-gateway": {} as {}, // eslint-disable-line @typescript-eslint/no-empty-object-type
 	huggingface: {} as {}, // eslint-disable-line @typescript-eslint/no-empty-object-type
 	litellm: {} as { apiKey?: string; baseUrl?: string }, // kilocode_change: parameters optional
@@ -201,12 +219,15 @@ const dynamicProviderExtras = {
 	synthetic: {} as { apiKey?: string }, // kilocode_change
 	roo: {} as { apiKey?: string; baseUrl?: string },
 	chutes: {} as { apiKey?: string },
+	poe: {} as { apiKey?: string }, // kilocode_change
 	// kilocode_change start
 	"sap-ai-core": {} as {
 		sapAiCoreServiceKey?: string
 		sapAiCoreResourceGroup?: string
 		sapAiCoreUseOrchestration?: boolean
 	},
+	aihubmix: {} as { apiKey?: string; baseUrl?: string },
+	apertis: {} as { apiKey?: string; baseUrl?: string },
 	// kilocode_change end
 } as const satisfies Record<RouterName, object>
 

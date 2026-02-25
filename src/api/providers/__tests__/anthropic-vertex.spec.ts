@@ -838,6 +838,20 @@ describe("VertexHandler", () => {
 			expect(modelInfo.info.contextWindow).toBe(200_000)
 		})
 
+		// kilocode_change start
+		it("should normalize legacy claude-opus-4-6 aliases", () => {
+			handler = new AnthropicVertexHandler({
+				apiModelId: "claude-opus-4-6@default",
+				vertexProjectId: "test-project",
+				vertexRegion: "us-central1",
+			})
+
+			const modelInfo = handler.getModel()
+			expect(modelInfo.id).toBe("claude-opus-4-6")
+			expect(modelInfo.info.supportsImages).toBe(true)
+		})
+		// kilocode_change end
+
 		it("honors custom maxTokens for thinking models", () => {
 			const handler = new AnthropicVertexHandler({
 				apiKey: "test-api-key",
@@ -884,6 +898,21 @@ describe("VertexHandler", () => {
 		it("should enable 1M context for Claude Sonnet 4.5 when beta flag is set", () => {
 			const handler = new AnthropicVertexHandler({
 				apiModelId: VERTEX_1M_CONTEXT_MODEL_IDS[1],
+				vertexProjectId: "test-project",
+				vertexRegion: "us-central1",
+				vertex1MContext: true,
+			})
+
+			const model = handler.getModel()
+			expect(model.info.contextWindow).toBe(1_000_000)
+			expect(model.info.inputPrice).toBe(6.0)
+			expect(model.info.outputPrice).toBe(22.5)
+			expect(model.betas).toContain("context-1m-2025-08-07")
+		})
+
+		it("should enable 1M context for Claude Sonnet 4.6 when beta flag is set", () => {
+			const handler = new AnthropicVertexHandler({
+				apiModelId: "claude-sonnet-4-6@20260114",
 				vertexProjectId: "test-project",
 				vertexRegion: "us-central1",
 				vertex1MContext: true,

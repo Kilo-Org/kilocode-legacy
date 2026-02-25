@@ -8,6 +8,8 @@ vitest.mock("vscode", () => ({
 		language: "en",
 		uiKind: 1,
 		appName: "Visual Studio Code",
+		isTelemetryEnabled: true,
+		machineId: "test-machine-id",
 	},
 	version: "1.85.0",
 }))
@@ -22,12 +24,14 @@ import {
 	X_KILOCODE_ORGANIZATIONID,
 	X_KILOCODE_PROJECTID,
 	X_KILOCODE_EDITORNAME,
+	X_KILOCODE_MACHINEID,
 	X_KILOCODE_MODE,
+	X_KILOCODE_FEATURE,
 } from "../../../shared/kilocode/headers"
-import { streamSse } from "../../../services/continuedev/core/fetch/stream"
+import { streamSse } from "../../../services/autocomplete/continuedev/core/fetch/stream"
 
 // Mock the stream module
-vitest.mock("../../../services/continuedev/core/fetch/stream", () => ({
+vitest.mock("../../../services/autocomplete/continuedev/core/fetch/stream", () => ({
 	streamSse: vitest.fn(),
 }))
 
@@ -85,6 +89,8 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_MODE]: "code",
 					[X_KILOCODE_TASKID]: "test-task-id",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 		})
@@ -102,6 +108,8 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_TASKID]: "test-task-id",
 					[X_KILOCODE_ORGANIZATIONID]: "test-org-id",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 		})
@@ -124,6 +132,8 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_ORGANIZATIONID]: "test-org-id",
 					[X_KILOCODE_PROJECTID]: "https://github.com/user/repo.git",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 		})
@@ -146,6 +156,8 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_PROJECTID]: "https://github.com/user/repo.git",
 					[X_KILOCODE_ORGANIZATIONID]: "test-org-id",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 		})
@@ -163,6 +175,8 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_TASKID]: "test-task-id",
 					[X_KILOCODE_ORGANIZATIONID]: "test-org-id",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 			expect(result?.headers).not.toHaveProperty(X_KILOCODE_PROJECTID)
@@ -181,20 +195,52 @@ describe("KilocodeOpenrouterHandler", () => {
 					[X_KILOCODE_MODE]: "code",
 					[X_KILOCODE_TASKID]: "test-task-id",
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
 			expect(result?.headers).not.toHaveProperty(X_KILOCODE_PROJECTID)
 		})
 
-		it("returns only editorName header when no other headers are needed", () => {
+		it("returns editorName, machineId, and feature headers when no other headers are needed", () => {
 			const handler = new KilocodeOpenrouterHandler(mockOptions)
 			const result = handler.customRequestOptions()
 
 			expect(result).toEqual({
 				headers: {
 					[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+					[X_KILOCODE_MACHINEID]: "test-machine-id",
+					[X_KILOCODE_FEATURE]: "vscode-extension",
 				},
 			})
+		})
+
+		it("uses metadata.feature when explicitly set (e.g. parallel-agent)", () => {
+			const handler = new KilocodeOpenrouterHandler(mockOptions)
+			const result = handler.customRequestOptions({
+				taskId: "child-task-id",
+				mode: "code",
+				feature: "parallel-agent",
+			})
+
+			expect(result?.headers?.[X_KILOCODE_FEATURE]).toBe("parallel-agent")
+		})
+
+		it("uses metadata.feature for autocomplete override", () => {
+			const handler = new KilocodeOpenrouterHandler(mockOptions)
+			const result = handler.customRequestOptions({
+				taskId: "autocomplete",
+				feature: "autocomplete",
+			})
+
+			expect(result?.headers?.[X_KILOCODE_FEATURE]).toBe("autocomplete")
+		})
+
+		it("defaults to vscode-extension when no feature override and not JetBrains/agent-manager", () => {
+			const handler = new KilocodeOpenrouterHandler(mockOptions)
+			const result = handler.customRequestOptions({ taskId: "test-task-id" })
+
+			expect(result?.headers?.[X_KILOCODE_FEATURE]).toBe("vscode-extension")
 		})
 	})
 
@@ -241,6 +287,7 @@ describe("KilocodeOpenrouterHandler", () => {
 						[X_KILOCODE_PROJECTID]: "https://github.com/user/repo.git",
 						[X_KILOCODE_ORGANIZATIONID]: "test-org-id",
 						[X_KILOCODE_EDITORNAME]: "Visual Studio Code 1.85.0",
+						[X_KILOCODE_MACHINEID]: "test-machine-id",
 					}),
 				}),
 				// kilocode_change end

@@ -278,6 +278,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				ovhCloudAiEndpointsApiKey: "ovhcloud-key",
 				inceptionLabsApiKey: "inception-key",
 				inceptionLabsBaseUrl: "https://api.inceptionlabs.ai/v1/",
+				poeApiKey: "poe-key",
 				// kilocode_change end
 			},
 		})
@@ -310,6 +311,11 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 		expect(mockGetModels).toHaveBeenCalledWith({ provider: "requesty", apiKey: "requesty-key" })
 		expect(mockGetModels).toHaveBeenCalledWith({ provider: "glama" }) // kilocode_change
 		expect(mockGetModels).toHaveBeenCalledWith({ provider: "unbound", apiKey: "unbound-key" })
+		expect(mockGetModels).toHaveBeenCalledWith({
+			provider: "zenmux",
+			apiKey: undefined,
+			baseUrl: "https://zenmux.ai/api/v1",
+		})
 		// kilocode_change start
 		expect(mockGetModels).toHaveBeenCalledWith({ provider: "chutes", apiKey: "chutes-key" })
 		expect(mockGetModels).toHaveBeenCalledWith({
@@ -326,6 +332,10 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			provider: "nano-gpt",
 			apiKey: "nano-gpt-key",
 			nanoGptModelList: undefined,
+		})
+		expect(mockGetModels).toHaveBeenCalledWith({
+			provider: "poe",
+			apiKey: "poe-key",
 		})
 		// kilocode_change end
 		expect(mockGetModels).toHaveBeenCalledWith({ provider: "vercel-ai-gateway" })
@@ -348,6 +358,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				gemini: mockModels, // kilocode_change
@@ -358,8 +369,11 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				litellm: mockModels,
 				kilocode: mockModels,
 				"nano-gpt": mockModels, // kilocode_change
+				aihubmix: mockModels, // kilocode_change
 				roo: mockModels,
 				chutes: mockModels,
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 				ollama: mockModels, // kilocode_change
 				lmstudio: {},
 				"vercel-ai-gateway": mockModels,
@@ -422,6 +436,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				ovhCloudAiEndpointsApiKey: "ovhcloud-key",
 				chutesApiKey: "chutes-key",
 				nanoGptApiKey: "nano-gpt-key",
+				poeApiKey: "poe-key",
 				// kilocode_change end
 				// Missing litellm config
 			},
@@ -454,6 +469,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				gemini: mockModels, // kilocode_change
@@ -463,9 +479,12 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				unbound: mockModels,
 				roo: mockModels,
 				chutes: mockModels,
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 				litellm: {},
 				kilocode: mockModels,
 				"nano-gpt": mockModels, // kilocode_change
+				aihubmix: mockModels, // kilocode_change
 				ollama: mockModels, // kilocode_change
 				lmstudio: {},
 				"vercel-ai-gateway": mockModels,
@@ -501,11 +520,14 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			.mockResolvedValueOnce(mockModels) // vercel-ai-gateway
 			.mockResolvedValueOnce(mockModels) // deepinfra
 			.mockResolvedValueOnce(mockModels) // nano-gpt // kilocode_change
+			.mockResolvedValueOnce(mockModels) // kilocode_change aihubmix
 			.mockResolvedValueOnce(mockModels) // kilocode_change ovhcloud
 			.mockRejectedValueOnce(new Error("Inception API error")) // kilocode_change
 			.mockRejectedValueOnce(new Error("Synthetic API error")) // kilocode_change
 			.mockResolvedValueOnce(mockModels) // roo
 			.mockRejectedValueOnce(new Error("Chutes API error")) // chutes
+			.mockResolvedValueOnce(mockModels) // poe // kilocode_change
+			.mockResolvedValueOnce(mockModels) // zenmux
 			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm
 
 		await webviewMessageHandler(mockClineProvider, {
@@ -561,6 +583,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "routerModels",
 			routerModels: {
+				apertis: {}, // kilocode_change
 				deepinfra: mockModels,
 				openrouter: mockModels,
 				requesty: {},
@@ -568,6 +591,8 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				unbound: {},
 				roo: mockModels,
 				chutes: {},
+				poe: mockModels, // kilocode_change
+				zenmux: mockModels,
 				litellm: {},
 				ollama: {},
 				lmstudio: {},
@@ -577,6 +602,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				// kilocode_change start
 				kilocode: mockModels,
 				"nano-gpt": mockModels,
+				aihubmix: mockModels, // kilocode_change
 				inception: {},
 				synthetic: {},
 				gemini: mockModels,
@@ -601,11 +627,14 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			.mockRejectedValueOnce(new Error("Vercel AI Gateway error")) // vercel-ai-gateway
 			.mockRejectedValueOnce(new Error("DeepInfra API error")) // deepinfra
 			.mockRejectedValueOnce(new Error("Nano-GPT API error")) // nano-gpt // kilocode_change
+			.mockRejectedValueOnce(new Error("Aihubmix API error")) // aihubmix // kilocode_change
 			.mockRejectedValueOnce(new Error("OVHcloud AI Endpoints error")) // ovhcloud // kilocode_change
 			.mockRejectedValueOnce(new Error("Inception API error")) // kilocode_change inception
 			.mockRejectedValueOnce(new Error("Synthetic API error")) // kilocode_change synthetic
 			.mockRejectedValueOnce(new Error("Roo API error")) // roo
 			.mockRejectedValueOnce(new Error("Chutes API error")) // chutes
+			.mockRejectedValueOnce(new Error("Poe API error")) // poe // kilocode_change
+			.mockResolvedValueOnce({}) // zenmux
 			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm
 
 		await webviewMessageHandler(mockClineProvider, {
@@ -712,6 +741,15 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			values: { provider: "chutes" },
 		})
 
+		// kilocode_change start
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "singleRouterModelFetchResponse",
+			success: false,
+			error: "Poe API error",
+			values: { provider: "poe" },
+		})
+		// kilocode_change end
+
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "singleRouterModelFetchResponse",
 			success: false,
@@ -720,6 +758,12 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 		})
 
 		// kilocode_change start
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "singleRouterModelFetchResponse",
+			success: false,
+			error: "Aihubmix API error",
+			values: { provider: "aihubmix" },
+		})
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "singleRouterModelFetchResponse",
 			success: false,

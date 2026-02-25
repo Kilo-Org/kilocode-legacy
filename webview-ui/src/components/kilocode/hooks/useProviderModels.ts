@@ -5,6 +5,8 @@ import {
 	anthropicModels,
 	basetenModels,
 	basetenDefaultModelId,
+	corethinkModels,
+	corethinkDefaultModelId,
 	bedrockDefaultModelId,
 	bedrockModels,
 	deepSeekDefaultModelId,
@@ -51,6 +53,9 @@ import {
 	cerebrasModels,
 	cerebrasDefaultModelId,
 	nanoGptDefaultModelId, //kilocode_change
+	poeDefaultModelId, //kilocode_change
+	apertisDefaultModelId, // kilocode_change
+	aihubmixDefaultModelId, // kilocode_change
 	ovhCloudAiEndpointsDefaultModelId,
 	inceptionDefaultModelId,
 	minimaxModels,
@@ -59,6 +64,7 @@ import {
 	internationalZAiDefaultModelId,
 	mainlandZAiModels,
 	mainlandZAiDefaultModelId,
+	zenmuxDefaultModelId,
 } from "@roo-code/types"
 import type { ModelRecord, RouterModels } from "@roo/api"
 import { useRouterModels } from "../../ui/hooks/useRouterModels"
@@ -99,6 +105,14 @@ export const getModelsByProvider = ({
 				defaultModel: glamaDefaultModelId,
 			}
 		}
+		// kilocode_change start
+		case "apertis": {
+			return {
+				models: routerModels.apertis,
+				defaultModel: apertisDefaultModelId,
+			}
+		}
+		// kilocode_change end
 		case "unbound": {
 			return {
 				models: routerModels.unbound,
@@ -242,6 +256,12 @@ export const getModelsByProvider = ({
 			}
 		}
 		// kilocode_change start
+		case "poe": {
+			return {
+				models: routerModels.poe,
+				defaultModel: poeDefaultModelId,
+			}
+		}
 		case "synthetic": {
 			return {
 				models: routerModels.synthetic,
@@ -310,6 +330,12 @@ export const getModelsByProvider = ({
 				defaultModel: nanoGptDefaultModelId,
 			}
 		}
+		case "aihubmix": {
+			return {
+				models: routerModels.aihubmix,
+				defaultModel: aihubmixDefaultModelId,
+			}
+		}
 		//kilocode_change end
 		case "minimax": {
 			return {
@@ -321,6 +347,12 @@ export const getModelsByProvider = ({
 			return {
 				models: basetenModels,
 				defaultModel: basetenDefaultModelId,
+			}
+		}
+		case "corethink": {
+			return {
+				models: corethinkModels,
+				defaultModel: corethinkDefaultModelId,
 			}
 		}
 		case "zai": {
@@ -336,6 +368,12 @@ export const getModelsByProvider = ({
 				}
 			}
 		}
+		case "zenmux": {
+			return {
+				models: routerModels.zenmux,
+				defaultModel: zenmuxDefaultModelId,
+			}
+		}
 		default:
 			return {
 				models: {},
@@ -348,7 +386,12 @@ export const getOptionsForProvider = (provider: ProviderName, apiConfiguration?:
 	switch (provider) {
 		case "zai":
 			// Determine which Z.AI model set to use based on the API line configuration
-			return { isChina: apiConfiguration?.zaiApiLine === "china_coding" }
+			// kilocode_change start
+			return {
+				isChina:
+					apiConfiguration?.zaiApiLine === "china_coding" || apiConfiguration?.zaiApiLine === "china_api",
+			}
+		// kilocode_change end
 		default:
 			return {}
 	}
