@@ -282,6 +282,7 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			...(useNativeTools && { tools: this.convertToolsForOpenAI(metadata!.tools) }),
 			...(finalToolChoice && { tool_choice: finalToolChoice }),
 			...(useNativeTools && { parallel_tool_calls: metadata?.parallelToolCalls ?? false }),
+            ...(modelInfo.supportsReasoningEffort && { reasoning_effort: this.getReasoningEffort(modelInfo) as any })
 		}
 
 		let stream
@@ -318,8 +319,8 @@ export class OcaHandler extends BaseProvider implements SingleCompletionHandler 
 			}
 			{
 				const reasoningText = (
-					"reasoning_content" in (delta || {}) && typeof (delta as any).reasoning_content === "string"
-						? (delta as any).reasoning_content
+					"thinking" in (delta || {}) && typeof (delta as any).thinking === "string"
+						? (delta as any).thinking
 						: "reasoning" in (delta || {}) && typeof (delta as any).reasoning === "string"
 							? (delta as any).reasoning
 							: undefined
