@@ -72,11 +72,11 @@ export async function getOCAModels(
 			const modelId = model?.litellm_params?.model
 			if (typeof modelId !== "string" || !modelId) continue
 
-			// Only include models that support chat completions
+			// Only include models that support chat completions or responses API
 			const supportedApis: string[] = Array.isArray(model?.model_info?.supported_api_list)
 				? model.model_info?.supported_api_list
 				: []
-			if (!supportedApis.includes("CHAT_COMPLETIONS")) continue
+			if (!supportedApis.includes("CHAT_COMPLETIONS") && !supportedApis.includes("RESPONSES")) continue
 
 			const info = model?.model_info || {}
 
@@ -96,6 +96,15 @@ export async function getOCAModels(
 				cacheReadsPrice: parsePrice(info?.cached_price),
 				description: info?.description,
 				banner: info?.banner,
+				// new field: let handler branch on this!
+				supportedApiTypes: supportedApis.filter((api) => api === "CHAT_COMPLETIONS" || api === "RESPONSES"),
+				apiType: supportedApis.includes("RESPONSES")
+					? "responses"
+					: supportedApis.includes("CHAT_COMPLETIONS")
+						? "chat-completions"
+						: "unknown",
+                ...({supportsReasoningEffort: info?.is_reasoning_model ? info?.reasoning_effort_options : false }),
+                reasoningEffort: undefined
 			}
 
 			models[modelId] = baseInfo
