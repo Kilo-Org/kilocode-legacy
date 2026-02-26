@@ -103,8 +103,8 @@ export async function getOCAModels(
 					: supportedApis.includes("CHAT_COMPLETIONS")
 						? "chat-completions"
 						: "unknown",
-				supportsReasoningEffort: info?.reasoning_effort_options,
-				reasoningEffort: info?.reasoning_effort,
+                ...({supportsReasoningEffort: info?.is_reasoning_model ? info?.reasoning_effort_options : false }),
+                reasoningEffort: undefined
 			}
 
 			models[modelId] = baseInfo
