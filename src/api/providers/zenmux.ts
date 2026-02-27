@@ -315,7 +315,7 @@ export class ZenMuxHandler extends BaseProvider implements SingleCompletionHandl
 
 			const kiloCodeChunk = KiloCodeChunkSchema.safeParse(chunk).data
 			inferenceProvider =
-				kiloCodeChunk?.choices?.[0]?.delta?.provider_metadata?.gateway?.routing?.resolvedProvider ??
+				kiloCodeChunk?.choices?.[0]?.delta?.provider_metadata?.gateway?.routing?.finalProvider ??
 				kiloCodeChunk?.provider ??
 				inferenceProvider
 
