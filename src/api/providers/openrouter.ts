@@ -524,7 +524,7 @@ export class OpenRouterHandler extends BaseProvider implements SingleCompletionH
 			// kilocode_change start
 			const kiloCodeChunk = KiloCodeChunkSchema.safeParse(chunk).data
 			inferenceProvider =
-				kiloCodeChunk?.choices?.[0]?.delta?.provider_metadata?.gateway?.routing?.resolvedProvider ??
+				kiloCodeChunk?.choices?.[0]?.delta?.provider_metadata?.gateway?.routing?.finalProvider ??
 				kiloCodeChunk?.provider ??
 				inferenceProvider
 			// kilocode_change end

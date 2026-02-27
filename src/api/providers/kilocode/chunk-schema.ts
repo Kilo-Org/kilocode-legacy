@@ -14,7 +14,7 @@ export const VercelAiGatewayChunkSchema = z.object({
 							.object({
 								routing: z
 									.object({
-										resolvedProvider: z.string().optional(),
+										finalProvider: z.string().optional(),
 									})
 									.optional(),
 							})
