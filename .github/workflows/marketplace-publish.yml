@@ -114,7 +114,7 @@ jobs:
                     bin/kilo-code-${current_package_version}.vsix
                   echo "Successfully created GitHub Release v${current_package_version}"
             - name: Upload VSIX artifact
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: kilo-code-vsix
                   path: bin/kilo-code-${{ steps.get-version.outputs.version }}.vsix
@@ -229,7 +229,7 @@ jobs:
                     --clobber
                   echo "Successfully attached JetBrains plugin to GitHub Release v${current_package_version}"
             - name: Upload artifact
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: ${{ env.BUNDLE_NAME }}
                   path: jetbrains/plugin/build/distributions/${{ env.BUNDLE_NAME }}
