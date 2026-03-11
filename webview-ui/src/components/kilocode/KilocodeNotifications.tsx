@@ -21,14 +21,21 @@ interface Notification {
 }
 
 const USE_MODEL_BUTTON_LABEL = "Try model"
+// kilocode_change start: Permanent non-dismissible notification
+const PERMANENT_NOTIFICATION_ID = "kilo-new-extension-beta-march-11"
+// kilocode_change end
 
 export const KilocodeNotifications: React.FC = () => {
 	const { dismissedNotificationIds, currentApiConfigName, apiConfiguration } = useExtensionState()
 	const { provider, providerModels, isLoading, isError } = useProviderModels(apiConfiguration)
 	const [notifications, setNotifications] = useState<Notification[]>([])
+	// kilocode_change start: Never filter out permanent notification
 	const filteredNotifications = notifications.filter(
-		(notification) => !(dismissedNotificationIds || []).includes(notification.id),
+		(notification) =>
+			notification.id === PERMANENT_NOTIFICATION_ID ||
+			!(dismissedNotificationIds || []).includes(notification.id),
 	)
+	// kilocode_change end
 	const [currentIndex, setCurrentIndex] = useState(0)
 
 	useEffect(() => {
@@ -117,12 +124,16 @@ export const KilocodeNotifications: React.FC = () => {
 			<div className="bg-vscode-editor-background border border-vscode-panel-border rounded-lg p-3 gap-3">
 				<div className="flex items-center justify-between">
 					<h3 className="font-medium text-vscode-foreground m-0">{currentNotification.title}</h3>
-					<button
-						onClick={() => dismissNotificationId(currentNotification.id)}
-						className="text-vscode-descriptionForeground hover:text-vscode-foreground p-1 cursor-pointer"
-						title="Dismiss notification">
-						<span className="codicon codicon-close"></span>
-					</button>
+					{/* kilocode_change start: Hide dismiss button for permanent notification */}
+					{currentNotification.id !== PERMANENT_NOTIFICATION_ID && (
+						<button
+							onClick={() => dismissNotificationId(currentNotification.id)}
+							className="text-vscode-descriptionForeground hover:text-vscode-foreground p-1 cursor-pointer"
+							title="Dismiss notification">
+							<span className="codicon codicon-close"></span>
+						</button>
+					)}
+					{/* kilocode_change end */}
 				</div>
 
 				<p className="text-vscode-descriptionForeground">{currentNotification.message}</p>
