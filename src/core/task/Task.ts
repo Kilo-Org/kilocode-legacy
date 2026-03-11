@@ -2756,6 +2756,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				"api_req_started",
 				JSON.stringify({
 					apiProtocol,
+					modelId,
 				}),
 			)
 
@@ -2837,6 +2838,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 			this.clineMessages[lastApiReqIndex].text = JSON.stringify({
 				apiProtocol,
+				modelId,
 			} satisfies ClineApiReqInfo)
 
 			await this.saveClineMessages()
@@ -2900,6 +2902,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						// kilocode_change start
 						usageMissing,
 						inferenceProvider,
+						modelId,
 						// kilocode_change end
 						cancelReason,
 						streamingFailedMessage,

@@ -22,6 +22,7 @@ import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { findMatchingResourceOrTemplate } from "@src/utils/mcp"
 import { vscode } from "@src/utils/vscode"
 import { formatPathTooltip } from "@src/utils/formatPathTooltip"
+import { prettyModelName } from "@src/utils/prettyModelName"
 
 import { ToolUseBlock, ToolUseBlockHeader } from "../common/ToolUseBlock"
 import UpdateTodoListToolBlock from "./UpdateTodoListToolBlock"
@@ -265,21 +266,22 @@ export const ChatRowContent = ({
 		vscode.postMessage({ type: "selectImages", context: "edit", messageTs: message.ts })
 	}, [message.ts])
 
-	// kilocode_change: usageMissing, inferenceProvider
-	const [cost, usageMissing, inferenceProvider, apiReqCancelReason, apiReqStreamingFailedMessage] = useMemo(() => {
-		if (message.text !== null && message.text !== undefined && message.say === "api_req_started") {
-			const info = safeJsonParse<ClineApiReqInfo>(message.text)
-			return [
-				info?.cost,
-				info?.usageMissing,
-				info?.inferenceProvider,
-				info?.cancelReason,
-				info?.streamingFailedMessage,
-			]
-		}
+	const [cost, usageMissing, inferenceProvider, apiReqCancelReason, apiReqStreamingFailedMessage, apiReqModelId] =
+		useMemo(() => {
+			if (message.text !== null && message.text !== undefined && message.say === "api_req_started") {
+				const info = safeJsonParse<ClineApiReqInfo>(message.text)
+				return [
+					info?.cost,
+					info?.usageMissing,
+					info?.inferenceProvider,
+					info?.cancelReason,
+					info?.streamingFailedMessage,
+					info?.modelId,
+				]
+			}
 
-		return [undefined, undefined, undefined]
-	}, [message.text, message.say])
+			return [undefined, undefined, undefined, undefined, undefined, undefined]
+		}, [message.text, message.say])
 
 	// kilocode_change start: hide cost display check
 	const { hideCostBelowThreshold } = useExtensionState()
@@ -1207,6 +1209,11 @@ export const ChatRowContent = ({
 									{/* kilocode_change start */}
 									<div style={{ display: "flex", alignItems: "center", gap: "8px", flexGrow: 1 }}>
 										{title}
+										{apiReqModelId && (
+											<VSCodeBadge className="text-xs" title={`Model: ${apiReqModelId}`}>
+												{prettyModelName(apiReqModelId)}
+											</VSCodeBadge>
+										)}
 										{showTimestamps && <ChatTimestamps ts={message.ts} />}
 									</div>
 									{/* kilocode_change end */}

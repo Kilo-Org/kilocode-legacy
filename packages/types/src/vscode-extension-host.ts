@@ -1398,6 +1398,7 @@ export interface ClineApiReqInfo {
 	// kilocode_change
 	usageMissing?: boolean
 	inferenceProvider?: string
+	modelId?: string
 	// kilocode_change end
 	cancelReason?: ClineApiReqCancelReason
 	streamingFailedMessage?: string
