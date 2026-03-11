@@ -2,4 +2,4 @@
 "kilo-code": patch
 ---
 
-Add permanent, non-dismissible notification about the rebuilt Kilo Code extension
+Add hardcoded notification about the rebuilt Kilo Code extension that users can dismiss normally

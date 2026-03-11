@@ -4017,13 +4017,6 @@ export const webviewMessageHandler = async (
 				break
 			}
 
-			// kilocode_change start: Block dismissal of permanent notification
-			const { PERMANENT_NOTIFICATION_ID } = await import("../kilocode/webview/webviewMessageHandlerUtils")
-			if (message.notificationId === PERMANENT_NOTIFICATION_ID) {
-				break
-			}
-			// kilocode_change end
-
 			const dismissedNotificationIds = getGlobalState("dismissedNotificationIds") || []
 
 			await updateGlobalState("dismissedNotificationIds", [...dismissedNotificationIds, message.notificationId])
