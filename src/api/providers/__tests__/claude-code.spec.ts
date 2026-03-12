@@ -79,6 +79,30 @@ describe("ClaudeCodeHandler", () => {
 		expect(model.info.maxTokens).toBe(32768)
 	})
 
+	test("should return sonnet 4.6 model with configured maxTokens and contextWindow", () => {
+		const options: ApiHandlerOptions = {
+			apiModelId: "claude-sonnet-4-6",
+		}
+		const handlerWithModel = new ClaudeCodeHandler(options)
+		const model = handlerWithModel.getModel()
+
+		expect(model.id).toBe("claude-sonnet-4-6")
+		expect(model.info.maxTokens).toBe(64000)
+		expect(model.info.contextWindow).toBe(200000)
+	})
+
+	test("should return opus 4.6 model with configured maxTokens and contextWindow", () => {
+		const options: ApiHandlerOptions = {
+			apiModelId: "claude-opus-4-6",
+		}
+		const handlerWithModel = new ClaudeCodeHandler(options)
+		const model = handlerWithModel.getModel()
+
+		expect(model.id).toBe("claude-opus-4-6")
+		expect(model.info.maxTokens).toBe(128000)
+		expect(model.info.contextWindow).toBe(1000000)
+	})
+
 	test("should support reasoning effort configuration", () => {
 		const options: ApiHandlerOptions = {
 			apiModelId: "claude-sonnet-4-5",
@@ -602,6 +626,56 @@ describe("ClaudeCodeHandler", () => {
 				expect.objectContaining({
 					model: "claude-opus-4-5",
 					maxTokens: 32768, // opus model maxTokens
+				}),
+			)
+		})
+
+		test("should use sonnet 4.6 model maxTokens when configured", async () => {
+			const options: ApiHandlerOptions = {
+				apiModelId: "claude-sonnet-4-6",
+			}
+			const handlerSonnet46 = new ClaudeCodeHandler(options)
+
+			mockGetAccessToken.mockResolvedValue("test-access-token")
+			mockGetEmail.mockResolvedValue("test@example.com")
+
+			const mockGenerator = async function* (): AsyncGenerator<StreamChunk> {
+				yield { type: "text", text: "Response" }
+			}
+
+			mockCreateStreamingMessage.mockReturnValue(mockGenerator())
+
+			await handlerSonnet46.completePrompt("Test prompt")
+
+			expect(mockCreateStreamingMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					model: "claude-sonnet-4-6",
+					maxTokens: 64000,
+				}),
+			)
+		})
+
+		test("should use opus 4.6 model maxTokens when configured", async () => {
+			const options: ApiHandlerOptions = {
+				apiModelId: "claude-opus-4-6",
+			}
+			const handlerOpus46 = new ClaudeCodeHandler(options)
+
+			mockGetAccessToken.mockResolvedValue("test-access-token")
+			mockGetEmail.mockResolvedValue("test@example.com")
+
+			const mockGenerator = async function* (): AsyncGenerator<StreamChunk> {
+				yield { type: "text", text: "Response" }
+			}
+
+			mockCreateStreamingMessage.mockReturnValue(mockGenerator())
+
+			await handlerOpus46.completePrompt("Test prompt")
+
+			expect(mockCreateStreamingMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					model: "claude-opus-4-6",
+					maxTokens: 128000,
 				}),
 			)
 		})

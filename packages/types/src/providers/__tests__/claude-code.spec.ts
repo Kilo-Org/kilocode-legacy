@@ -3,13 +3,17 @@ import { normalizeClaudeCodeModelId } from "../claude-code.js"
 describe("normalizeClaudeCodeModelId", () => {
 	test("should return valid model IDs unchanged", () => {
 		expect(normalizeClaudeCodeModelId("claude-sonnet-4-5")).toBe("claude-sonnet-4-5")
+		expect(normalizeClaudeCodeModelId("claude-sonnet-4-6")).toBe("claude-sonnet-4-6")
 		expect(normalizeClaudeCodeModelId("claude-opus-4-5")).toBe("claude-opus-4-5")
+		expect(normalizeClaudeCodeModelId("claude-opus-4-6")).toBe("claude-opus-4-6")
 		expect(normalizeClaudeCodeModelId("claude-haiku-4-5")).toBe("claude-haiku-4-5")
 	})
 
 	test("should normalize sonnet models with date suffix to claude-sonnet-4-5", () => {
 		// Sonnet 4.5 with date
 		expect(normalizeClaudeCodeModelId("claude-sonnet-4-5-20250929")).toBe("claude-sonnet-4-5")
+		// Sonnet 4.6 with date
+		expect(normalizeClaudeCodeModelId("claude-sonnet-4-6-20260114")).toBe("claude-sonnet-4-6")
 		// Sonnet 4 (legacy)
 		expect(normalizeClaudeCodeModelId("claude-sonnet-4-20250514")).toBe("claude-sonnet-4-5")
 		// Claude 3.7 Sonnet
@@ -21,6 +25,8 @@ describe("normalizeClaudeCodeModelId", () => {
 	test("should normalize opus models with date suffix to claude-opus-4-5", () => {
 		// Opus 4.5 with date
 		expect(normalizeClaudeCodeModelId("claude-opus-4-5-20251101")).toBe("claude-opus-4-5")
+		// Opus 4.6 with date
+		expect(normalizeClaudeCodeModelId("claude-opus-4-6-20260114")).toBe("claude-opus-4-6")
 		// Opus 4.1 (legacy)
 		expect(normalizeClaudeCodeModelId("claude-opus-4-1-20250805")).toBe("claude-opus-4-5")
 		// Opus 4 (legacy)

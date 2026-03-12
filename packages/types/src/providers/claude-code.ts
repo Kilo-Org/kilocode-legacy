@@ -66,6 +66,17 @@ export const claudeCodeModels = {
 		reasoningEffort: "medium",
 		description: "Claude Sonnet 4.5 - Balanced performance with thinking",
 	},
+	"claude-sonnet-4-6": {
+		maxTokens: 64000,
+		contextWindow: 200_000,
+		supportsImages: true,
+		supportsPromptCache: true,
+		supportsNativeTools: true,
+		defaultToolProtocol: "native",
+		supportsReasoningEffort: ["disable", "low", "medium", "high"],
+		reasoningEffort: "medium",
+		description: "Claude Sonnet 4.6 - Balanced performance with thinking",
+	},
 	"claude-opus-4-5": {
 		maxTokens: 32768,
 		contextWindow: 200_000,
@@ -76,6 +87,17 @@ export const claudeCodeModels = {
 		supportsReasoningEffort: ["disable", "low", "medium", "high"],
 		reasoningEffort: "medium",
 		description: "Claude Opus 4.5 - Most capable with thinking",
+	},
+	"claude-opus-4-6": {
+		maxTokens: 128000,
+		contextWindow: 1_000_000,
+		supportsImages: true,
+		supportsPromptCache: true,
+		supportsNativeTools: true,
+		defaultToolProtocol: "native",
+		supportsReasoningEffort: ["disable", "low", "medium", "high"],
+		reasoningEffort: "medium",
+		description: "Claude Opus 4.6 - Most capable with thinking",
 	},
 } as const satisfies Record<string, ModelInfo>
 

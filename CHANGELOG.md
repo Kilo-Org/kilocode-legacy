@@ -1,5 +1,11 @@
 # kilo-code
 
+## 5.10.2
+
+### Patch Changes
+
+- [#44](https://github.com/Kilo-Org/kilocode-legacy/pull/44) [`b3f72a6`](https://github.com/Kilo-Org/kilocode-legacy/commit/b3f72a6a4a07b20450f6bf4024b29b1b8b79db1b) Thanks [@catgirl3d](https://github.com/catgirl3d)! - feat(providers): add Claude Code Sonnet/Opus 4.6 models to Claude Code and fix OpenAI Codex GPT-5.4 id
+
 ## 5.10.1
 
 ### Patch Changes

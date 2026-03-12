@@ -58,7 +58,7 @@ export const openAiCodexModels = {
 		supportsTemperature: false,
 		description: "GPT-5.1 Codex: GPT-5.1 optimized for agentic coding via ChatGPT subscription",
 	},
-	"gpt-5.4-codex": {
+	"gpt-5.4": {
 		maxTokens: 128000,
 		contextWindow: 1000000,
 		supportsNativeTools: true,
@@ -72,7 +72,7 @@ export const openAiCodexModels = {
 		inputPrice: 0,
 		outputPrice: 0,
 		supportsTemperature: false,
-		description: "GPT-5.4 Codex: OpenAI's flagship coding model via ChatGPT subscription",
+		description: "GPT-5.4: OpenAI's flagship coding model via ChatGPT subscription",
 	},
 	"gpt-5.3-codex": {
 		maxTokens: 128000,
