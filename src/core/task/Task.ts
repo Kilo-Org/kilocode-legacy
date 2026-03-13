@@ -381,11 +381,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	clineMessages: ClineMessage[] = []
 
 	/**
-	 * cumulative cost of API calls from messages that were deleted during this session.
-	 * this ensures the total cost displayed to the user reflects all API usage,
-	 * even if messages are removed from the conversation history.
+	 * monotonic cumulative API cost for this task lifecycle.
+	 * initialized from persisted history and only increases.
 	 */
-	private _deletedApiCost: number = 0 // kilocode_change
+	private _cumulativeApiCost: number = 0 // kilocode_change
 
 	// Ask
 	private askResponse?: ClineAskResponse
@@ -613,6 +612,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		if (historyItem) {
 			this._taskMode = historyItem.mode || defaultModeSlug
 			this._taskApiConfigName = historyItem.apiConfigName
+			this._cumulativeApiCost = historyItem.totalCost ?? 0 // kilocode_change
 			this.taskModeReady = Promise.resolve()
 			this.taskApiConfigReady = Promise.resolve()
 			TelemetryService.instance.captureTaskRestarted(this.taskId)
@@ -624,6 +624,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// For new tasks, don't set the mode/apiConfigName yet - wait for async initialization.
 			this._taskMode = undefined
 			this._taskApiConfigName = undefined
+			this._cumulativeApiCost = 0 // kilocode_change
 			this.taskModeReady = this.initializeTaskMode(provider)
 			this.taskApiConfigReady = this.initializeTaskApiConfigName(provider)
 			TelemetryService.instance.captureTaskCreated(this.taskId)
@@ -1338,7 +1339,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				apiConfigName: this._taskApiConfigName, // Use the task's own provider profile, not the current provider profile.
 				initialStatus: this.initialStatus,
 				toolProtocol: this._taskToolProtocol, // Persist the locked tool protocol.
-				cumulativeTotalCost: this.getCumulativeTotalCost(), // kilocode_change: include deleted message costs.
+				cumulativeTotalCost: this.getCumulativeTotalCost(), // kilocode_change: persist monotonic cumulative cost.
 			})
 
 			// Emit token/tool usage updates using debounced function
@@ -5136,30 +5137,22 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// kilocod_change start
 	public getTokenUsage(): TokenUsage {
 		const metrics = getApiMetrics(this.combineMessages(this.clineMessages.slice(1)))
-		// add deleted API costs to the total cost
+		const totalCost = Math.max(this._cumulativeApiCost, metrics.totalCost)
+		this._cumulativeApiCost = totalCost
 		return {
 			...metrics,
-			totalCost: metrics.totalCost + this._deletedApiCost,
+			totalCost,
 		}
 	}
 
 	/**
-	 * get cumulative total cost including deleted messages.
-	 * this is the cost that should be persisted in history.
+	 * get monotonic cumulative total cost.
+	 * this value is persisted in history and never decreases during task lifecycle.
 	 */
 	public getCumulativeTotalCost(): number {
 		const metrics = getApiMetrics(this.combineMessages(this.clineMessages.slice(1)))
-		return metrics.totalCost + this._deletedApiCost
-	}
-
-	/**
-	 * add cost from deleted messages to the cumulative total.
-	 * called by message deletion handlers to preserve true session cost.
-	 */
-	public addDeletedApiCost(cost: number): void {
-		if (cost > 0) {
-			this._deletedApiCost += cost
-		}
+		this._cumulativeApiCost = Math.max(this._cumulativeApiCost, metrics.totalCost)
+		return this._cumulativeApiCost
 	}
 	// kilocod_change end
 

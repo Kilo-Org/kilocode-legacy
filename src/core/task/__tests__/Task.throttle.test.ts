@@ -509,6 +509,47 @@ describe("Task token usage throttling", () => {
 			task.toolUsage,
 		)
 	})
+
+	// kilocode_change start
+	test("should keep cumulative cost monotonic when messages are rewound", () => {
+		;(task as any).clineMessages = [
+			{ ts: 1, type: "say", say: "text", text: "Task" },
+			{ ts: 2, type: "say", say: "api_req_started", text: JSON.stringify({ cost: 0.5 }) },
+		]
+
+		const beforeRewind = task.getCumulativeTotalCost()
+		expect(beforeRewind).toBe(0.5)
+		;(task as any).clineMessages = [{ ts: 1, type: "say", say: "text", text: "Task" }]
+
+		const afterRewind = task.getCumulativeTotalCost()
+		expect(afterRewind).toBe(0.5)
+		expect(task.getTokenUsage().totalCost).toBe(0.5)
+	})
+
+	test("should initialize cumulative cost from persisted history item totalCost", () => {
+		const resumedTask = new Task({
+			context: mockProvider.context,
+			provider: mockProvider as ClineProvider,
+			apiConfiguration: mockApiConfiguration,
+			startTask: false,
+			historyItem: {
+				id: "resume-task-id",
+				number: 1,
+				ts: Date.now(),
+				task: "Resumed task",
+				tokensIn: 0,
+				tokensOut: 0,
+				totalCost: 1.25,
+			} as any,
+		})
+
+		;(resumedTask as any).clineMessages = [{ ts: 1, type: "say", say: "text", text: "Task" }]
+		expect(resumedTask.getCumulativeTotalCost()).toBe(1.25)
+		expect(resumedTask.getTokenUsage().totalCost).toBe(1.25)
+
+		resumedTask.dispose()
+	})
+	// kilocode_change end
 })
 
 describe("hasToolUsageChanged", () => {
