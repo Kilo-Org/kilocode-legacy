@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Kod tabanı dizinini sorgularken döndürülecek maksimum arama sonucu sayısı. Daha yüksek değerler daha fazla bağlam sağlar ancak daha az alakalı sonuçlar içerebilir.",
 		"resetToDefault": "Varsayılana sıfırla",
 		"cancelling": "İptal ediliyor...",
-		"cancelIndexingButton": "İndekslemeyi iptal et"
+		"cancelIndexingButton": "İndekslemeyi iptal et",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "<SettingsLink>IDE tercihlerinizde</SettingsLink> bu ayar için genel bir kısayol yapılandırabilirsiniz.",
@@ -608,10 +614,9 @@
 			"none": "Yok",
 			"minimal": "Minimal (en hızlı)",
 			"high": "Yüksek",
-			"xhigh": "Çok yüksek",
+			"xhigh": "Ekstra Yüksek",
 			"medium": "Orta",
-			"low": "Düşük",
-			"xhigh": "Ekstra Yüksek"
+			"low": "Düşük"
 		},
 		"verbosity": {
 			"label": "Çıktı Ayrıntı Düzeyi",

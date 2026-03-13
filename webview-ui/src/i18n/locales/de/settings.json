@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Maximale Anzahl von Suchergebnissen, die bei der Abfrage des Codebase-Index zurückgegeben werden. Höhere Werte bieten mehr Kontext, können aber weniger relevante Ergebnisse enthalten.",
 		"resetToDefault": "Auf Standard zurücksetzen",
 		"cancelling": "Wird abgebrochen...",
-		"cancelIndexingButton": "Indizierung abbrechen"
+		"cancelIndexingButton": "Indizierung abbrechen",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Du kannst <SettingsLink>in deinen IDE-Einstellungen</SettingsLink> einen globalen Shortcut für diese Einstellung konfigurieren.",
@@ -645,8 +651,7 @@
 			"high": "Hoch",
 			"xhigh": "Sehr hoch",
 			"medium": "Mittel",
-			"low": "Niedrig",
-			"xhigh": "Sehr hoch"
+			"low": "Niedrig"
 		},
 		"verbosity": {
 			"label": "Ausgabe-Ausführlichkeit",

@@ -156,7 +156,13 @@
 		"searchMaxResultsDescription": "Maximum number of search results to return when querying the codebase index. Higher values provide more context but may include less relevant results.",
 		"resetToDefault": "Reset to default",
 		"startIndexingButton": "Start Indexing",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
 		"clearIndexDataButton": "Clear Index Data",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project.",
 		"unsavedSettingsMessage": "Please save your settings before starting the indexing process.",
 		"clearDataDialog": {
 			"title": "Are you sure?",

@@ -221,7 +221,13 @@
 		},
 		"cancelling": "جارٍ الإلغاء...",
 		"cancelIndexingButton": "إلغاء الفهرسة",
-		"optional": "اختياري"
+		"optional": "اختياري",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApproval": {
 		"title": "الموافقة التلقائية",

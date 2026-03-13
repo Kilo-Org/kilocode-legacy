@@ -215,7 +215,13 @@
 		},
 		"optional": "voliteľné",
 		"cancelling": "Prebieha rušenie...",
-		"cancelIndexingButton": "Zrušiť indexovanie"
+		"cancelIndexingButton": "Zrušiť indexovanie",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApproval": {
 		"title": "Automatické schválenie",

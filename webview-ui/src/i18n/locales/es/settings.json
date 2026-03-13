@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Número máximo de resultados de búsqueda a devolver al consultar el índice de código. Valores más altos proporcionan más contexto pero pueden incluir resultados menos relevantes.",
 		"resetToDefault": "Restablecer al valor predeterminado",
 		"cancelling": "Cancelando...",
-		"cancelIndexingButton": "Cancelar la indexación"
+		"cancelIndexingButton": "Cancelar la indexación",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Puedes configurar un atajo global para esta configuración <SettingsLink>en las preferencias de tu IDE</SettingsLink>.",
@@ -617,10 +623,9 @@
 			"none": "Ninguno",
 			"minimal": "Mínimo (el más rápido)",
 			"high": "Alto",
-			"xhigh": "Muy alto",
+			"xhigh": "Extra Alto",
 			"medium": "Medio",
-			"low": "Bajo",
-			"xhigh": "Extra Alto"
+			"low": "Bajo"
 		},
 		"verbosity": {
 			"label": "Verbosidad de la salida",

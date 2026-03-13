@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Максимальное количество результатов поиска, возвращаемых при запросе индекса кодовой базы. Более высокие значения предоставляют больше контекста, но могут включать менее релевантные результаты.",
 		"resetToDefault": "Сбросить к значению по умолчанию",
 		"cancelling": "Отмена...",
-		"cancelIndexingButton": "Отменить индексацию"
+		"cancelIndexingButton": "Отменить индексацию",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Вы можете настроить глобальное сочетание клавиш для этого параметра <SettingsLink>в настройках вашей IDE</SettingsLink>.",
@@ -636,8 +642,7 @@
 			"high": "Высокие",
 			"xhigh": "Очень высокие",
 			"medium": "Средние",
-			"low": "Низкие",
-			"xhigh": "Очень высокие"
+			"low": "Низкие"
 		},
 		"verbosity": {
 			"label": "Подробность вывода",

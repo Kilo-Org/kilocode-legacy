@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Maksymalna liczba wyników wyszukiwania zwracanych podczas zapytania do indeksu bazy kodu. Wyższe wartości zapewniają więcej kontekstu, ale mogą zawierać mniej istotne wyniki.",
 		"resetToDefault": "Przywróć domyślne",
 		"cancelling": "Anulowanie...",
-		"cancelIndexingButton": "Anuluj indeksowanie"
+		"cancelIndexingButton": "Anuluj indeksowanie",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Możesz skonfigurować globalny skrót dla tego ustawienia <SettingsLink>w preferencjach swojego IDE</SettingsLink>.",
@@ -636,8 +642,7 @@
 			"high": "Wysoki",
 			"xhigh": "Bardzo wysoki",
 			"medium": "Średni",
-			"low": "Niski",
-			"xhigh": "Bardzo wysoki"
+			"low": "Niski"
 		},
 		"verbosity": {
 			"label": "Szczegółowość danych wyjściowych",

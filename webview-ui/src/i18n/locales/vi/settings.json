@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Số lượng kết quả tìm kiếm tối đa được trả về khi truy vấn chỉ mục cơ sở mã. Giá trị cao hơn cung cấp nhiều ngữ cảnh hơn nhưng có thể bao gồm các kết quả ít liên quan hơn.",
 		"resetToDefault": "Đặt lại về mặc định",
 		"cancelling": "Đang hủy...",
-		"cancelIndexingButton": "Hủy lập chỉ mục"
+		"cancelIndexingButton": "Hủy lập chỉ mục",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Bạn có thể định cấu hình một phím tắt chung cho cài đặt này <SettingsLink>trong tùy chọn IDE của bạn</SettingsLink>.",
@@ -636,8 +642,7 @@
 			"high": "Cao",
 			"xhigh": "Rất cao",
 			"medium": "Trung bình",
-			"low": "Thấp",
-			"xhigh": "Rất cao"
+			"low": "Thấp"
 		},
 		"verbosity": {
 			"label": "Mức độ chi tiết đầu ra",

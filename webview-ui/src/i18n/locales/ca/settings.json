@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Nombre màxim de resultats de cerca a retornar quan es consulta l'índex de la base de codi. Els valors més alts proporcionen més context però poden incloure resultats menys rellevants.",
 		"resetToDefault": "Restablir al valor per defecte",
 		"cancelling": "S'està cancel·lant...",
-		"cancelIndexingButton": "Cancel·la la indexació"
+		"cancelIndexingButton": "Cancel·la la indexació",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "Pots configurar una drecera global per a aquesta configuració <SettingsLink>a les preferències del teu IDE</SettingsLink>.",
@@ -634,10 +640,9 @@
 			"none": "Cap",
 			"minimal": "Mínim (el més ràpid)",
 			"high": "Alt",
-			"xhigh": "Molt alt",
+			"xhigh": "Molt Alt",
 			"medium": "Mitjà",
-			"low": "Baix",
-			"xhigh": "Molt Alt"
+			"low": "Baix"
 		},
 		"verbosity": {
 			"label": "Verbositat de la sortida",

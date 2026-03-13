@@ -193,7 +193,13 @@
 		"searchMaxResultsDescription": "Maximum aantal zoekresultaten dat wordt geretourneerd bij het doorzoeken van de codebase-index. Hogere waarden bieden meer context maar kunnen minder relevante resultaten bevatten.",
 		"resetToDefault": "Reset naar standaard",
 		"cancelling": "Bezig met annuleren...",
-		"cancelIndexingButton": "Indexering annuleren"
+		"cancelIndexingButton": "Indexering annuleren",
+		"activateIndexButton": "Activate Index",
+		"deactivateIndexButton": "Deactivate Index",
+		"activatingIndex": "Activating",
+		"deactivatingIndex": "Deactivating",
+		"featureNotConfiguredWarning": "Indexing is active for this workspace, but setup is incomplete. Complete setup below to start indexing.",
+		"openWorkspaceFirst": "Open a workspace folder to manage indexing for this project."
 	},
 	"autoApprove": {
 		"toggleShortcut": "U kunt een globale sneltoets voor deze instelling configureren <SettingsLink>in de voorkeuren van uw IDE</SettingsLink>.",
@@ -634,10 +640,9 @@
 			"none": "Geen",
 			"minimal": "Minimaal (Snelst)",
 			"high": "Hoog",
-			"xhigh": "Zeer hoog",
+			"xhigh": "Extra Hoog",
 			"medium": "Middel",
-			"low": "Laag",
-			"xhigh": "Extra Hoog"
+			"low": "Laag"
 		},
 		"verbosity": {
 			"label": "Uitvoerbaarheid",
