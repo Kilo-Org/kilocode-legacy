@@ -11,6 +11,22 @@ import { ContextProxy } from "../../config/ContextProxy"
 
 const shownNativeNotificationIds = new Set<string>()
 
+// kilocode_change start: Hardcoded permanent notification for new extension
+export const HARDCODED_NOTIFICATION_ID = "kilo-new-extension-beta-march-11"
+
+export const HARDCODED_NOTIFICATION: KilocodeNotification = {
+	id: HARDCODED_NOTIFICATION_ID,
+	title: "We've completely rebuilt the Kilo Code extension for VS Code.",
+	message:
+		"Subagent delegation, parallel execution, and the full power of the CLI\u2014now inside your editor. Try it now.",
+	action: {
+		actionText: "Learn more",
+		actionURL: "https://blog.kilo.ai/p/we-completely-rebuilt-the-kilo-vs-code-extension",
+	},
+	showIn: ["extension"],
+}
+// kilocode_change end
+
 /**
  * Replaces vscode:// protocol in URLs with the appropriate protocol for the current IDE.
  * For example, in Cursor it becomes cursor://, in VSCodium it becomes vscodium://, etc.
@@ -217,38 +233,43 @@ const resendMessageSequence = async (
 }
 
 export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider) => {
+	// kilocode_change start: Always include hardcoded notification
+	let apiNotifications: KilocodeNotification[] = []
+	let nativeNotifications: KilocodeNotification[] = []
+
 	try {
 		const { apiConfiguration, dismissedNotificationIds } = await provider.getState()
 		const kilocodeToken = apiConfiguration?.kilocodeToken
 
-		if (!kilocodeToken || apiConfiguration?.apiProvider !== "kilocode") {
-			provider.postMessageToWebview({
-				type: "kilocodeNotificationsResponse",
-				notifications: [],
-			})
-			return
+		if (kilocodeToken && apiConfiguration?.apiProvider === "kilocode") {
+			const result = await fetchKilocodeNotificationsCore(
+				kilocodeToken,
+				dismissedNotificationIds || [],
+				apiConfiguration.kilocodeTesterWarningsDisabledUntil,
+				provider.log.bind(provider),
+			)
+			apiNotifications = result.notifications
+			nativeNotifications = result.nativeNotifications
 		}
-
-		const { notifications, nativeNotifications } = await fetchKilocodeNotificationsCore(
-			kilocodeToken,
-			dismissedNotificationIds || [],
-			apiConfiguration.kilocodeTesterWarningsDisabledUntil,
-			provider.log.bind(provider),
-		)
-
-		provider.postMessageToWebview({
-			type: "kilocodeNotificationsResponse",
-			notifications,
-		})
-
-		await displayNativeNotifications(nativeNotifications, provider.log.bind(provider))
 	} catch (error: any) {
 		provider.log(`Error fetching Kilocode notifications: ${error.message}`)
-		provider.postMessageToWebview({
-			type: "kilocodeNotificationsResponse",
-			notifications: [],
-		})
 	}
+
+	// Always prepend the hardcoded notification (non-dismissible, always visible)
+	const allNotifications = [
+		HARDCODED_NOTIFICATION,
+		...apiNotifications.filter((n) => n.id !== HARDCODED_NOTIFICATION_ID),
+	]
+
+	provider.postMessageToWebview({
+		type: "kilocodeNotificationsResponse",
+		notifications: allNotifications,
+	})
+
+	if (nativeNotifications.length > 0) {
+		await displayNativeNotifications(nativeNotifications, provider.log.bind(provider))
+	}
+	// kilocode_change end
 }
 
 export const editMessageHandler = async (provider: ClineProvider, message: WebviewMessage) => {

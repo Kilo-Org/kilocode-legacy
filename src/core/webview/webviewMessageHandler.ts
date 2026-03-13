@@ -93,6 +93,7 @@ import {
 	editMessageHandler,
 	fetchKilocodeNotificationsHandler,
 	deviceAuthMessageHandler,
+	HARDCODED_NOTIFICATION_ID,
 } from "../kilocode/webview/webviewMessageHandlerUtils"
 import { AutocompleteServiceManager } from "../../services/autocomplete/AutocompleteServiceManager"
 import { handleChatCompletionRequest } from "../../services/autocomplete/chat-autocomplete/handleChatCompletionRequest"
@@ -4013,7 +4014,7 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "dismissNotificationId": {
-			if (!message.notificationId) {
+			if (!message.notificationId || message.notificationId === HARDCODED_NOTIFICATION_ID) {
 				break
 			}
 
