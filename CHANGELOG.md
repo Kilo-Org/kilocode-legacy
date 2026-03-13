@@ -1,5 +1,19 @@
 # kilo-code
 
+## 5.10.4
+
+### Patch Changes
+
+- [#54](https://github.com/Kilo-Org/kilocode-legacy/pull/54) [`7de6525`](https://github.com/Kilo-Org/kilocode-legacy/commit/7de652520851d8debad92b72d6cb9dfa10edb399) Thanks [@kilo-code-bot](https://github.com/apps/kilo-code-bot)! - Update onboarding premium models text to reflect new first top-up bonus credits offer
+
+## 5.10.3
+
+### Patch Changes
+
+- [#47](https://github.com/Kilo-Org/kilocode-legacy/pull/47) [`65552ff`](https://github.com/Kilo-Org/kilocode-legacy/commit/65552ff1f501aaecc235882a299c4ae59f31a5a1) Thanks [@kevinvandijk](https://github.com/kevinvandijk)! - Add OpenAI's GPT-5.3-Chat-Latest model support (thanks Roo! / @PeterDaveHello)
+
+- [#47](https://github.com/Kilo-Org/kilocode-legacy/pull/47) [`65552ff`](https://github.com/Kilo-Org/kilocode-legacy/commit/65552ff1f501aaecc235882a299c4ae59f31a5a1) Thanks [@kevinvandijk](https://github.com/kevinvandijk)! - Add OpenAI's GPT-5.4 model support (thanks Roo! / @PeterDaveHello)
+
 ## 5.10.2
 
 ### Patch Changes
