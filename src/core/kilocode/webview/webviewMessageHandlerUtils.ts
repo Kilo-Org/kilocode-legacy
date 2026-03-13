@@ -11,6 +11,20 @@ import { ContextProxy } from "../../config/ContextProxy"
 
 const shownNativeNotificationIds = new Set<string>()
 
+export const PERMANENT_NOTIFICATION_ID = "kilo-new-extension-beta-march-11"
+
+export const PERMANENT_NOTIFICATION: KilocodeNotification = {
+	id: PERMANENT_NOTIFICATION_ID,
+	title: "We've completely rebuilt the Kilo Code extension for VS Code.",
+	message:
+		"Subagent delegation, parallel execution, and the full power of the CLI\u2014now inside your editor. Try it now.",
+	action: {
+		actionText: "Learn more",
+		actionURL: "https://blog.kilo.ai/p/we-completely-rebuilt-the-kilo-vs-code-extension",
+	},
+	showIn: ["extension"],
+}
+
 /**
  * Replaces vscode:// protocol in URLs with the appropriate protocol for the current IDE.
  * For example, in Cursor it becomes cursor://, in VSCodium it becomes vscodium://, etc.
@@ -224,7 +238,7 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 		if (!kilocodeToken || apiConfiguration?.apiProvider !== "kilocode") {
 			provider.postMessageToWebview({
 				type: "kilocodeNotificationsResponse",
-				notifications: [],
+				notifications: [PERMANENT_NOTIFICATION],
 			})
 			return
 		}
@@ -236,9 +250,12 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 			provider.log.bind(provider),
 		)
 
+		const filteredNotifications = notifications.filter((n) => n.id !== PERMANENT_NOTIFICATION_ID)
+		const allNotifications = [PERMANENT_NOTIFICATION, ...filteredNotifications]
+
 		provider.postMessageToWebview({
 			type: "kilocodeNotificationsResponse",
-			notifications,
+			notifications: allNotifications,
 		})
 
 		await displayNativeNotifications(nativeNotifications, provider.log.bind(provider))
@@ -246,7 +263,7 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 		provider.log(`Error fetching Kilocode notifications: ${error.message}`)
 		provider.postMessageToWebview({
 			type: "kilocodeNotificationsResponse",
-			notifications: [],
+			notifications: [PERMANENT_NOTIFICATION],
 		})
 	}
 }
