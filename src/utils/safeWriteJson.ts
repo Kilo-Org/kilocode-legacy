@@ -6,6 +6,19 @@ import Disassembler from "stream-json/Disassembler"
 import Stringer from "stream-json/Stringer"
 
 /**
+ * Options for safeWriteJson function.
+ */
+export interface SafeWriteJsonOptions {
+	/**
+	 * Number of spaces for indentation when pretty-printing JSON.
+	 * If provided, JSON will be formatted with the specified indentation.
+	 * If not provided (undefined), JSON will be written in compact format (single line).
+	 * Common values: 2, 4
+	 */
+	indent?: number
+}
+
+/**
  * Safely writes JSON data to a file.
  * - Creates parent directories if they don't exist
  * - Uses 'proper-lockfile' for inter-process advisory locking to prevent concurrent writes to the same path.
@@ -15,10 +28,13 @@ import Stringer from "stream-json/Stringer"
  *
  * @param {string} filePath - The absolute path to the target file.
  * @param {any} data - The data to serialize to JSON and write.
+ * @param {number | SafeWriteJsonOptions} [options] - Either an indent number or options object.
  * @returns {Promise<void>}
  */
 
-async function safeWriteJson(filePath: string, data: any): Promise<void> {
+async function safeWriteJson(filePath: string, data: any, options?: number | SafeWriteJsonOptions): Promise<void> {
+	// Normalize options parameter
+	const opts: SafeWriteJsonOptions = typeof options === "number" ? { indent: options } : (options ?? {})
 	const absoluteFilePath = path.resolve(filePath)
 	let releaseLock = async () => {} // Initialized to a no-op
 
@@ -70,12 +86,13 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
 
 	try {
 		// Step 1: Write data to a new temporary file.
-		actualTempNewFilePath = path.join(
+		const tempNewFilePath = path.join(
 			path.dirname(absoluteFilePath),
 			`.${path.basename(absoluteFilePath)}.new_${Date.now()}_${Math.random().toString(36).substring(2)}.tmp`,
 		)
+		actualTempNewFilePath = tempNewFilePath
 
-		await _streamDataToFile(actualTempNewFilePath, data)
+		await _streamDataToFile(tempNewFilePath, data, opts.indent)
 
 		// Step 2: Check if the target file exists. If so, rename it to a backup path.
 		try {
@@ -182,9 +199,17 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
  * Helper function to stream JSON data to a file.
  * @param targetPath The path to write the stream to.
  * @param data The data to stream.
+ * @param indent Optional number of spaces for indentation (pretty-print). If provided, uses JSON.stringify instead of streaming.
  * @returns Promise<void>
  */
-async function _streamDataToFile(targetPath: string, data: any): Promise<void> {
+async function _streamDataToFile(targetPath: string, data: any, indent?: number): Promise<void> {
+	// If indent is specified, use JSON.stringify for pretty-printing
+	if (indent !== undefined) {
+		const jsonString = JSON.stringify(data, null, indent)
+		await fs.writeFile(targetPath, jsonString, "utf8")
+		return
+	}
+
 	// Stream data to avoid high memory usage for large JSON objects.
 	const fileWriteStream = fsSync.createWriteStream(targetPath, { encoding: "utf8" })
 	const disassembler = Disassembler.disassembler()

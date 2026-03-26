@@ -477,4 +477,92 @@ describe("safeWriteJson", () => {
 
 		consoleErrorSpy.mockRestore()
 	})
+
+	// Tests for indent (pretty-print) functionality
+	describe("indent option", () => {
+		test("should write compact JSON (single line) when indent is not provided", async () => {
+			const data = { message: "compact", nested: { key: "value" } }
+
+			await safeWriteJson(currentTestFilePath, data)
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			// Compact JSON should not contain newlines
+			expect(content).not.toContain("\n")
+			expect(JSON.parse(content)).toEqual(data)
+		})
+
+		test("should write pretty-printed JSON with 2-space indent when indent is 2", async () => {
+			const data = { message: "pretty", nested: { key: "value" } }
+
+			await safeWriteJson(currentTestFilePath, data, 2)
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			// Pretty-printed JSON should contain newlines and indentation
+			expect(content).toContain("\n")
+			expect(content).toContain('  "message"')
+			expect(content).toContain('  "nested"')
+			expect(JSON.parse(content)).toEqual(data)
+		})
+
+		test("should write pretty-printed JSON with 4-space indent when indent is 4", async () => {
+			const data = { message: "pretty", nested: { key: "value" } }
+
+			await safeWriteJson(currentTestFilePath, data, 4)
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			// Pretty-printed JSON should contain 4-space indentation
+			expect(content).toContain("\n")
+			expect(content).toContain('    "message"')
+			expect(content).toContain('    "nested"')
+			expect(JSON.parse(content)).toEqual(data)
+		})
+
+		test("should accept options object with indent property", async () => {
+			const data = { message: "options test" }
+
+			await safeWriteJson(currentTestFilePath, data, { indent: 2 })
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			expect(content).toContain("\n")
+			expect(content).toContain('  "message"')
+			expect(JSON.parse(content)).toEqual(data)
+		})
+
+		test("should write compact JSON when indent is explicitly undefined in options", async () => {
+			const data = { message: "compact via options" }
+
+			await safeWriteJson(currentTestFilePath, data, { indent: undefined })
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			// Should be compact (no newlines)
+			expect(content).not.toContain("\n")
+			expect(JSON.parse(content)).toEqual(data)
+		})
+
+		test("should handle complex nested objects with indent", async () => {
+			const data = {
+				mcpServers: {
+					github: {
+						command: "npx",
+						args: ["-y", "@modelcontextprotocol/server-github"],
+						disabled: false,
+					},
+					filesystem: {
+						command: "npx",
+						args: ["-y", "@modelcontextprotocol/server-filesystem"],
+						disabled: true,
+					},
+				},
+			}
+
+			await safeWriteJson(currentTestFilePath, data, 2)
+
+			const content = await fs.readFile(currentTestFilePath, "utf-8")
+			expect(content).toContain("\n")
+			expect(content).toContain('  "mcpServers"')
+			expect(content).toContain('    "github"')
+			expect(content).toContain('    "filesystem"')
+			expect(JSON.parse(content)).toEqual(data)
+		})
+	})
 })
