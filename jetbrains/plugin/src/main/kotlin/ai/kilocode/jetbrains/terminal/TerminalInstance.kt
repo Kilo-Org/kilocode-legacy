@@ -2,6 +2,7 @@ package ai.kilocode.jetbrains.terminal
 
 import ai.kilocode.jetbrains.monitoring.ScopeRegistry
 import ai.kilocode.jetbrains.monitoring.DisposableTracker
+import ai.kilocode.jetbrains.util.ProjectUtil
 import ai.kilocode.jetbrains.core.ServiceProxyRegistry
 import ai.kilocode.jetbrains.ipc.proxy.IRPCProtocol
 import ai.kilocode.jetbrains.ipc.proxy.interfaces.ExtHostTerminalShellIntegrationProxy
@@ -232,7 +233,7 @@ class TerminalInstance(
         logger.info("🔧 Full shell command: $fullShellCommand")
 
         return ShellStartupOptions.Builder()
-            .workingDirectory(config.cwd ?: project.basePath)
+            .workingDirectory(config.cwd ?: ProjectUtil.getEffectiveProjectRoot(project))
             .shellCommand(fullShellCommand)
             .build()
     }
@@ -444,7 +445,7 @@ class TerminalInstance(
         try {
             logger.info("📤 Notify exthost process terminal opened: $extHostTerminalId (numericId: $numericId)")
 
-            val shellLaunchConfigDto = config.toShellLaunchConfigDto(project.basePath)
+            val shellLaunchConfigDto = config.toShellLaunchConfigDto(ProjectUtil.getEffectiveProjectRoot(project))
             val extHostTerminalServiceProxy =
                 rpcProtocol.getProxy(ServiceProxyRegistry.ExtHostContext.ExtHostTerminalService)
 

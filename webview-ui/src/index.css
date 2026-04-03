@@ -26,10 +26,10 @@
 @theme {
 	--font-display: var(--vscode-font-family);
 
-	--text-xs: calc(var(--vscode-font-size) * 0.85);
-	--text-sm: calc(var(--vscode-font-size) * 0.9);
-	--text-base: var(--vscode-font-size);
-	--text-lg: calc(var(--vscode-font-size) * 1.1);
+	--text-xs: calc(var(--vscode-font-size) * 0.85 + 1px);
+	--text-sm: calc(var(--vscode-font-size) * 0.9 + 1.2px);
+	--text-base: calc(var(--vscode-font-size) + 1.5px);
+	--text-lg: calc(var(--vscode-font-size) * 1.1 + 2px);
 
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -274,6 +274,7 @@ html {
 body {
 	margin: 0;
 	line-height: 1.25;
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 }
 
 body.scrollable,
@@ -383,7 +384,7 @@ body:focus-within .code-block-scrollable {
 	display: block;
 	color: var(--vscode-foreground);
 	cursor: pointer;
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	line-height: normal;
 	margin-bottom: 2px;
 }

@@ -7,6 +7,7 @@ package ai.kilocode.jetbrains.workspace
 import ai.kilocode.jetbrains.core.PluginContext
 import ai.kilocode.jetbrains.core.ServiceProxyRegistry
 import ai.kilocode.jetbrains.core.WorkspaceManager
+import ai.kilocode.jetbrains.util.ProjectUtil
 import ai.kilocode.jetbrains.events.FileChangeType
 import ai.kilocode.jetbrains.events.ProjectEventBus
 import ai.kilocode.jetbrains.events.WorkspaceDirectoriesChangeEvent
@@ -60,9 +61,9 @@ class WorkspaceFileChangeManager(val project: Project) : Disposable {
         override fun projectOpened(project: Project) {
             registerFileListener(project)
             // Record initial project workspace directory
-            project.basePath?.let { projectWorkspacePaths[project] = it }
+            ProjectUtil.getEffectiveProjectRoot(project)?.let { projectWorkspacePaths[project] = it }
             // Trigger workspace root change event
-            triggerWorkspaceRootChangeEvent(project, null, project.basePath ?: "")
+            triggerWorkspaceRootChangeEvent(project, null, ProjectUtil.getEffectiveProjectRoot(project) ?: "")
         }
 
         override fun projectClosed(project: Project) {
@@ -84,7 +85,7 @@ class WorkspaceFileChangeManager(val project: Project) : Disposable {
         for (project in openProjects) {
             registerFileListener(project)
             // Record workspace directory for opened projects
-            project.basePath?.let { projectWorkspacePaths[project] = it }
+            ProjectUtil.getEffectiveProjectRoot(project)?.let { projectWorkspacePaths[project] = it }
         }
     }
 

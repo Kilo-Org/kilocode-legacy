@@ -8,6 +8,7 @@ import ai.kilocode.jetbrains.core.ServiceProxyRegistry
 import ai.kilocode.jetbrains.monitoring.ScopeRegistry
 import ai.kilocode.jetbrains.monitoring.ThreadMonitor
 import ai.kilocode.jetbrains.monitoring.DisposableTracker
+import ai.kilocode.jetbrains.util.ProjectUtil
 import ai.kilocode.jetbrains.util.ExtensionUtils
 import ai.kilocode.jetbrains.util.PluginConstants
 import ai.kilocode.jetbrains.util.PluginResourceUtil
@@ -110,7 +111,7 @@ class WecoderPlugin : StartupActivity.DumbAware {
          */
         @JvmStatic
         fun getProjectBasePath(project: Project): String? {
-            return project.basePath
+            return ProjectUtil.getEffectiveProjectRoot(project)
         }
     }
 
@@ -323,7 +324,7 @@ class WecoderPluginService(private var currentProject: Project) : Disposable {
             try {
                 initPlatformFiles()
                 // Get project path
-                val projectPath = project.basePath ?: ""
+                val projectPath = ProjectUtil.getEffectiveProjectRoot(project) ?: ""
 
                 // Initialize service registration
                 project.getService(ServiceProxyRegistry::class.java).initialize()

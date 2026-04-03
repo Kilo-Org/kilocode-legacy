@@ -7,6 +7,7 @@ package ai.kilocode.jetbrains.core
 import ai.kilocode.jetbrains.model.StaticWorkspaceData
 import ai.kilocode.jetbrains.model.WorkspaceData
 import ai.kilocode.jetbrains.model.WorkspaceFolder
+import ai.kilocode.jetbrains.util.ProjectUtil
 import ai.kilocode.jetbrains.util.URI
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -43,6 +44,7 @@ class WorkspaceManager(val project: Project) {
         // Create workspace ID (using hash value of the project's base path)
         val workspaceId = getWorkspaceId(project)
         val workspaceName = project.name
+        val effectiveProjectRoot = ProjectUtil.getEffectiveProjectRoot(project)
 
         // Create static workspace data
         val staticWorkspaceData = StaticWorkspaceData(
@@ -50,7 +52,7 @@ class WorkspaceManager(val project: Project) {
             name = workspaceName,
             transient = false,
             // Configuration can be the project's .idea directory or project configuration file
-            configuration = project.basePath?.let { URI.file("$it/.idea") },
+            configuration = effectiveProjectRoot?.let { URI.file("$it/.idea") },
             isUntitled = false,
         )
 
@@ -68,7 +70,7 @@ class WorkspaceManager(val project: Project) {
      */
     private fun getWorkspaceId(project: Project): String {
         // Use the hash value of the project path as ID
-        val basePath = project.basePath ?: return UUID.randomUUID().toString()
+        val basePath = ProjectUtil.getEffectiveProjectRoot(project) ?: return UUID.randomUUID().toString()
         return basePath.hashCode().toString()
     }
 
@@ -80,7 +82,7 @@ class WorkspaceManager(val project: Project) {
      */
     private fun getWorkspaceFolders(project: Project): List<WorkspaceFolder> {
         val folders = mutableListOf<WorkspaceFolder>()
-        val basePath = project.basePath ?: return folders
+        val basePath = ProjectUtil.getEffectiveProjectRoot(project) ?: return folders
 
         // Add project root directory as the main workspace folder
         folders.add(

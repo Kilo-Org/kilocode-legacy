@@ -6,7 +6,7 @@
 	background: var(--vscode-editor-background);
 	color: var(--vscode-editor-foreground);
 	font-family: var(--vscode-font-family);
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 }
 
 /* Add padding when error boundary catches an error (no .agent-manager-container inside) */
@@ -24,7 +24,7 @@
 	font-family: var(--vscode-font-family);
 	background: var(--vscode-editor-background);
 	color: var(--vscode-editor-foreground);
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 }
 
 /* Scoped box-sizing reset - only within agent manager container */
@@ -128,7 +128,7 @@
 	border-radius: 4px;
 	background: var(--vscode-button-secondaryBackground);
 	color: var(--vscode-button-secondaryForeground);
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	font-weight: 500;
 	border: 1px solid var(--vscode-button-border, transparent);
 	transition: background-color 0.1s;
@@ -235,7 +235,7 @@
 }
 
 .am-session-label {
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	font-weight: 300;
 	color: var(--vscode-foreground);
 	white-space: nowrap;
@@ -283,7 +283,7 @@
 	padding: 20px;
 	text-align: center;
 	color: var(--vscode-descriptionForeground);
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 }
 
 /* Main Content */
@@ -555,7 +555,7 @@
 
 .am-message-author {
 	font-weight: 600;
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 }
 
 .am-message-ts {
@@ -573,7 +573,7 @@
 }
 
 .am-message-body {
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	line-height: 1.5;
 	overflow-wrap: break-word;
 }
@@ -729,7 +729,7 @@
 	border: 1px solid var(--vscode-input-border);
 	border-radius: 2px;
 	font-family: inherit;
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	resize: vertical;
 	min-height: 80px;
 }
@@ -1021,7 +1021,7 @@
 .am-cancel-btn {
 	padding: 6px 16px;
 	border-radius: 4px;
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	cursor: pointer;
 	border: 1px solid var(--vscode-button-border, transparent);
 	background: var(--vscode-button-secondaryBackground);
@@ -1069,7 +1069,7 @@
 	border: 1px solid var(--vscode-button-border, transparent);
 	background: var(--vscode-button-secondaryBackground);
 	color: var(--vscode-button-secondaryForeground);
-	font-size: var(--vscode-font-size);
+	font-size: calc(var(--vscode-font-size) + 1.5px);
 	cursor: pointer;
 	transition: background-color 0.15s;
 }

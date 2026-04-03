@@ -4,6 +4,7 @@
 
 package ai.kilocode.jetbrains.git
 
+import ai.kilocode.jetbrains.util.ProjectUtil
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -21,7 +22,7 @@ object WorkspaceResolver {
      * Returns null if project has no base path or the directory doesn't exist.
      */
     private fun getValidatedBaseDirectory(project: Project): File? {
-        val basePath = project.basePath ?: return null
+        val basePath = ProjectUtil.getEffectiveProjectRoot(project) ?: return null
         val baseDir = File(basePath)
         return if (baseDir.exists()) baseDir else null
     }
@@ -109,7 +110,7 @@ object WorkspaceResolver {
     ): String? {
         val workspacePath = getWorkspacePath(project)
         if (workspacePath == null) {
-            logger.error("Failed to resolve workspace path for project: ${project.name}, basePath: ${project.basePath}")
+            logger.error("Failed to resolve workspace path for project: ${project.name}, basePath: ${ProjectUtil.getEffectiveProjectRoot(project)}")
             Messages.showErrorDialog(project, errorMessage, errorTitle)
         }
         return workspacePath
