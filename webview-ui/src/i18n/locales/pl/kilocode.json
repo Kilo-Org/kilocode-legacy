@@ -89,7 +89,6 @@
 		"modelInfo": {
 			"contextWindow": "Okno kontekstu",
 			"providerBreakdown": "Zestawienie Cen i Możliwości Dostawcy",
-			"averageKiloCodeCost": "To jest średni rzeczywisty koszt za korzystanie z Kilo Code z tym modelem w ciągu ostatniego tygodnia. Może być niższy niż podana cena ze względu na wykorzystanie pamięci podręcznej promptów.",
 			"table": {
 				"provider": "Dostawca",
 				"context": "Punkt końcowy może przetworzyć tę liczbę tokenów (wejście + wyjście).",

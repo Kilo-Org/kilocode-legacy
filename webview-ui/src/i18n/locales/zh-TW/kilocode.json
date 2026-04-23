@@ -103,7 +103,6 @@
 		"modelInfo": {
 			"contextWindow": "上下文視窗",
 			"providerBreakdown": "供應商價格與功能明細",
-			"averageKiloCodeCost": "此為過去一週 Kilo Code 使用此模型的平均實際花費。由於使用了提示快取，費用可能低於列出的價格。",
 			"table": {
 				"provider": "供應商",
 				"context": "此端點可處理的 Token 數量（輸入 + 輸出）。",

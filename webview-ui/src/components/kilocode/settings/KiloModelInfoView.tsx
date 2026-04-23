@@ -3,21 +3,7 @@ import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { ModelDescriptionMarkdown } from "../../settings/ModelDescriptionMarkdown"
 import { ModelInfoSupportsItem } from "@/components/settings/ModelInfoView"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger, StandardTooltip } from "@/components/ui"
-import { useQuery } from "@tanstack/react-query"
-import { getKiloUrlFromToken } from "@roo-code/types"
-import { telemetryClient } from "@/utils/TelemetryClient"
 import { useModelProviders } from "@/components/ui/hooks/useSelectedModel"
-import { z } from "zod"
-
-const ModelStatsSchema = z.object({
-	model: z.string(),
-	cost: z.coerce.number(),
-	costPerRequest: z.number(),
-})
-
-const ModelStatsResponseSchema = z.array(ModelStatsSchema)
-
-type ModelStats = z.infer<typeof ModelStatsSchema>
 
 export const formatPrice = (price: number | Intl.StringNumericLiteral, digits: number = 2) => {
 	return new Intl.NumberFormat("en-US", {
@@ -93,32 +79,6 @@ export const KiloModelInfoView = ({
 }) => {
 	const { t } = useAppTranslation()
 	const providers = Object.values(useModelProviders(modelId, apiConfiguration).data ?? {})
-	const { data: modelStats } = useQuery<ModelStats[]>({
-		queryKey: ["modelstats"],
-		queryFn: async () => {
-			try {
-				const url = getKiloUrlFromToken(
-					"https://api.kilo.ai/api/modelstats",
-					apiConfiguration.kilocodeToken ?? "",
-				)
-				const response = await fetch(url)
-
-				if (!response.ok) {
-					throw new Error(`Failed to fetch model stats: ${response.status}`)
-				}
-
-				const data = await response.json()
-
-				return ModelStatsResponseSchema.parse(data)
-			} catch (err) {
-				if (err instanceof Error) {
-					telemetryClient.captureException(err, { context: "modelstats" })
-				}
-				throw err
-			}
-		},
-	})
-	const stats = modelStats?.find((ms) => ms.model === modelId)
 
 	return (
 		<>
@@ -150,18 +110,6 @@ export const KiloModelInfoView = ({
 					{model.maxTokens?.toLocaleString() ?? 0}
 				</div>
 			</div>
-			{stats && stats.cost && stats.costPerRequest && model.inputPrice && model.outputPrice ? (
-				<StandardTooltip content={t("kilocode:settings.modelInfo.averageKiloCodeCost")}>
-					<div className="text-sm text-vscode-descriptionForeground font-medium flex flex-wrap gap-2">
-						<div className="rounded-full border px-2.5 py-1">{formatPrice(stats.cost)} / M tokens</div>
-						<div className="rounded-full border px-2.5 py-1">
-							{formatPrice(stats.costPerRequest, 4)} / request
-						</div>
-					</div>
-				</StandardTooltip>
-			) : (
-				<></>
-			)}
 			<Collapsible open={isPricingExpanded} onOpenChange={setIsPricingExpanded}>
 				<CollapsibleTrigger className="flex items-center gap-1 w-full cursor-pointer hover:opacity-80 mb-2">
 					<span className={`codicon codicon-chevron-${isPricingExpanded ? "down" : "right"}`}></span>

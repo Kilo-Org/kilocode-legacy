@@ -96,7 +96,6 @@
 		"modelInfo": {
 			"contextWindow": "Kontextfenster",
 			"providerBreakdown": "Anbieter-Preis- und Funktionsübersicht",
-			"averageKiloCodeCost": "Das sind die durchschnittlichen tatsächlichen Ausgaben für Kilo Code mit diesem Modell in der letzten Woche. Sie können niedriger sein als der angegebene Preis aufgrund der Nutzung des Prompt-Caches.",
 			"table": {
 				"provider": "Anbieter",
 				"context": "Der Endpunkt kann diese Anzahl von Token verarbeiten (Eingabe + Ausgabe).",

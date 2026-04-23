@@ -96,7 +96,6 @@
 		"modelInfo": {
 			"contextWindow": "Kontextové okno",
 			"providerBreakdown": "Rozpis cien a schopností poskytovateľov",
-			"averageKiloCodeCost": "Toto sú priemerné skutočné náklady za použitie tohto modelu v Kilo Code za posledný týždeň. Môže byť nižšia ako uvedená cena vďaka využitiu cache pre prompty.",
 			"table": {
 				"provider": "Poskytovateľ",
 				"context": "Endpoint môže spracovať tento počet tokenov (vstup + výstup).",

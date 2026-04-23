@@ -108,7 +108,6 @@
 		"modelInfo": {
 			"contextWindow": "Cửa sổ ngữ cảnh",
 			"providerBreakdown": "Phân tích Giá và Khả năng của Nhà cung cấp",
-			"averageKiloCodeCost": "Đây là chi phí thực tế trung bình mà Kilo Code đã chi tiêu khi sử dụng mô hình này trong tuần qua. Chi phí này có thể thấp hơn giá niêm yết do việc sử dụng bộ nhớ đệm prompt.",
 			"table": {
 				"provider": "Nhà cung cấp",
 				"context": "Điểm cuối có thể xử lý số lượng token này (đầu vào + đầu ra).",

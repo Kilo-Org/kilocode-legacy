@@ -109,7 +109,6 @@
 		"modelInfo": {
 			"contextWindow": "หน้าต่างบริบท",
 			"providerBreakdown": "รายละเอียดราคาและความสามารถของผู้ให้บริการ",
-			"averageKiloCodeCost": "นี่คือค่าใช้จ่ายจริงเฉลี่ยสำหรับ Kilo Code ที่ใช้โมเดลนี้ในสัปดาห์ที่ผ่านมา อาจต่ำกว่าราคาที่แสดงเนื่องจากการใช้ prompt cache",
 			"table": {
 				"provider": "ผู้ให้บริการ",
 				"context": "endpoint สามารถประมวลผล token จำนวนนี้ได้ (input + output)",
