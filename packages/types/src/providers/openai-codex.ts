@@ -58,7 +58,7 @@ export const openAiCodexModels = {
 		supportsTemperature: false,
 		description: "GPT-5.1 Codex: GPT-5.1 optimized for agentic coding via ChatGPT subscription",
 	},
-		"gpt-5.5": {
+	"gpt-5.5": {
 		maxTokens: 128000,
 		contextWindow: 400000,
 		supportsNativeTools: true,
@@ -71,7 +71,6 @@ export const openAiCodexModels = {
 		reasoningEffort: "medium",
 		inputPrice: 0,
 		outputPrice: 0,
-		supportsVerbosity: true,
 		supportsTemperature: false,
 		description: "GPT-5.5: High-capability model for complex coding, reasoning, and agentic workflows via ChatGPT subscription",
 	},
