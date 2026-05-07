@@ -58,7 +58,7 @@
 		"node-pty": "^1.1.0-beta33",
 		"open": "^8.4.2",
 		"tas-client-umd": "0.2.0",
-		"undici": "^7.13.0",
+		"undici": "^6.24.0",
 		"undici-types": "^7.15.0",
 		"v8-inspect-profiler": "^0.1.1",
 		"vscode-oniguruma": "1.7.0",
