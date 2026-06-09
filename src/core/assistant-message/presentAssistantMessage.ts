@@ -299,6 +299,7 @@ export async function presentAssistantMessage(cline: Task) {
 					server_name: resolvedServerName,
 					tool_name: mcpBlock.toolName,
 					arguments: mcpBlock.arguments,
+					__save_to_file: mcpBlock.arguments.__save_to_file === true,
 				},
 			}
 

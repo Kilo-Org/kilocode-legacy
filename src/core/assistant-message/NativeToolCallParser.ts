@@ -823,6 +823,7 @@ export class NativeToolCallParser {
 							server_name: args.server_name,
 							tool_name: args.tool_name,
 							arguments: args.arguments,
+							__save_to_file: args.__save_to_file === true,
 						} as NativeArgsFor<TName>
 					}
 					break
@@ -832,6 +833,7 @@ export class NativeToolCallParser {
 						nativeArgs = {
 							server_name: args.server_name,
 							uri: args.uri,
+							__save_to_file: args.__save_to_file === true,
 						} as NativeArgsFor<TName>
 					}
 					break

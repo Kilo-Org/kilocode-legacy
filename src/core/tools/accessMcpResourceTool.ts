@@ -1,3 +1,4 @@
+import { saveMcpOutput } from "../../utils/saveMcpOutput"
 import type { ClineAskUseMcpServer } from "@roo-code/types"
 
 import type { ToolUse } from "../../shared/tools"
@@ -9,6 +10,7 @@ import { BaseTool, ToolCallbacks } from "./BaseTool"
 interface AccessMcpResourceParams {
 	server_name: string
 	uri: string
+	__save_to_file?: boolean
 }
 
 export class AccessMcpResourceTool extends BaseTool<"access_mcp_resource"> {
@@ -18,12 +20,16 @@ export class AccessMcpResourceTool extends BaseTool<"access_mcp_resource"> {
 		return {
 			server_name: params.server_name || "",
 			uri: params.uri || "",
+			__save_to_file: params.__save_to_file === "true" ? true : undefined,
 		}
 	}
 
 	async execute(params: AccessMcpResourceParams, task: Task, callbacks: ToolCallbacks): Promise<void> {
 		const { askApproval, handleError, pushToolResult, toolProtocol } = callbacks
 		const { server_name, uri } = params
+
+		// Extract Kilo Code directive
+		const saveToFile = params.__save_to_file === true
 
 		try {
 			if (!server_name) {
@@ -83,8 +89,20 @@ export class AccessMcpResourceTool extends BaseTool<"access_mcp_resource"> {
 				}
 			})
 
-			await task.say("mcp_server_response", resourceResultPretty, images)
-			pushToolResult(formatResponse.toolResult(resourceResultPretty, images))
+			let finalOutput = resourceResultPretty
+			if (saveToFile && resourceResultPretty && resourceResultPretty !== "(Empty response)") {
+				try {
+					const resourceName = uri.replace(/[^a-zA-Z0-9_]/g, "_").slice(-20)
+					const result = await saveMcpOutput(
+						task.cwd || process.cwd(), server_name, `resource_${resourceName}`, resourceResultPretty,
+					)
+					finalOutput = `[Output saved to: ${result.filePath} (${result.chars} chars, ${result.lines} lines)]`
+				} catch (err) {
+					console.error("saveMcpOutput failed:", err)
+				}
+			}
+			await task.say("mcp_server_response", finalOutput, images)
+			pushToolResult(formatResponse.toolResult(finalOutput, images))
 		} catch (error) {
 			await handleError("accessing MCP resource", error instanceof Error ? error : new Error(String(error)))
 		}

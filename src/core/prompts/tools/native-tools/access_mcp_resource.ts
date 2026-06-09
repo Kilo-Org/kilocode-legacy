@@ -33,6 +33,10 @@ export default {
 					type: "string",
 					description: URI_PARAMETER_DESCRIPTION,
 				},
+				__save_to_file: {
+					type: "boolean",
+					description: "If true, saves full resource output to a file and returns only a reference.",
+				},
 			},
 			required: ["server_name", "uri"],
 			additionalProperties: false,

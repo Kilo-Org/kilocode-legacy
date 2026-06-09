@@ -1,3 +1,4 @@
+import { saveMcpOutput } from "../../utils/saveMcpOutput"
 import type { ClineAskUseMcpServer, McpExecutionStatus } from "@roo-code/types"
 
 import { Task } from "../task/Task"
@@ -11,6 +12,7 @@ interface UseMcpToolParams {
 	server_name: string
 	tool_name: string
 	arguments?: Record<string, unknown>
+	__save_to_file?: boolean
 }
 
 type ValidationResult =
@@ -32,6 +34,7 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 			server_name: params.server_name || "",
 			tool_name: params.tool_name || "",
 			arguments: params.arguments as any, // Keep as string for validation to handle
+			__save_to_file: params.__save_to_file === "true" ? true : undefined,
 		}
 	}
 
@@ -56,6 +59,14 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 			// Reset mistake count on successful validation
 			task.consecutiveMistakeCount = 0
 
+			// Extract Kilo Code directive
+			const saveToFile = params.__save_to_file === true
+
+			// Strip Kilo Code directives from tool arguments before sending to MCP server
+			const safeParsedArguments = parsedArguments
+				? (delete parsedArguments.__save_to_file, parsedArguments)
+				: undefined
+
 			// Get user approval
 			const completeMessage = JSON.stringify({
 				type: "use_mcp_tool",
@@ -76,9 +87,10 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 				task,
 				serverName,
 				toolName,
-				parsedArguments,
+				safeParsedArguments,
 				executionId,
 				pushToolResult,
+				saveToFile,
 			)
 		} catch (error) {
 			await handleError("executing MCP tool", error as Error)
@@ -296,6 +308,7 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 		parsedArguments: Record<string, unknown> | undefined,
 		executionId: string,
 		pushToolResult: (content: string | Array<any>) => void,
+		saveToFile: boolean = false,
 	): Promise<void> {
 		await task.say("mcp_server_request_started")
 
@@ -321,7 +334,20 @@ export class UseMcpToolTool extends BaseTool<"use_mcp_tool"> {
 					response: outputText,
 				})
 
-				toolResultPretty = (toolResult.isError ? "Error:\n" : "") + outputText
+				if (saveToFile) {
+					try {
+						const result = await saveMcpOutput(
+							task.cwd || process.cwd(), serverName, toolName, outputText,
+						)
+						toolResultPretty = (toolResult.isError ? "Error:\n" : "") +
+							`[Output saved to: ${result.filePath} (${result.chars} chars, ${result.lines} lines)]`
+					} catch (err) {
+						console.error("saveMcpOutput failed:", err)
+						toolResultPretty = (toolResult.isError ? "Error:\n" : "") + outputText
+					}
+				} else {
+					toolResultPretty = (toolResult.isError ? "Error:\n" : "") + outputText
+				}
 			}
 
 			// Send completion status

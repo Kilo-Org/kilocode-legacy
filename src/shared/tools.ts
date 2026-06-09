@@ -100,7 +100,7 @@ export type ToolProtocol = "xml" | "native"
  * Tools not listed here will fall back to `any` for backward compatibility.
  */
 export type NativeToolArgs = {
-	access_mcp_resource: { server_name: string; uri: string }
+	access_mcp_resource: { server_name: string; uri: string; __save_to_file?: boolean }
 	read_file: { files: FileEntry[] }
 	attempt_completion: { result: string }
 	execute_command: { command: string; cwd?: string }
@@ -124,7 +124,7 @@ export type NativeToolArgs = {
 	search_files: { path: string; regex: string; file_pattern?: string | null }
 	switch_mode: { mode_slug: string; reason: string }
 	update_todo_list: { todos: string }
-	use_mcp_tool: { server_name: string; tool_name: string; arguments?: Record<string, unknown> }
+	use_mcp_tool: { server_name: string; tool_name: string; arguments?: Record<string, unknown>; __save_to_file?: boolean }
 	write_to_file: { path: string; content: string }
 	// Add more tools as they are migrated to native protocol
 }

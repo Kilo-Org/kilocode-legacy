@@ -52,6 +52,19 @@ export function getMcpServerTools(mcpHub?: McpHub): OpenAI.Chat.ChatCompletionTo
 				parameters = { type: "object", additionalProperties: false } as JsonSchema
 			}
 
+			// Inject __save_to_file so the AI can request file-saving in native mode.
+			// normalizeToolSchema sets additionalProperties: false for strict mode,
+			// so we add __save_to_file to properties (making it a known allowed property).
+			const paramsObj = parameters as Record<string, unknown>
+			const existingProps = (paramsObj.properties as Record<string, unknown>) || {}
+			paramsObj.properties = {
+				...existingProps,
+				__save_to_file: {
+					type: "boolean" as const,
+					description: "If true, saves full output to a file and returns only a reference.",
+				},
+			}
+
 			const toolDefinition: OpenAI.Chat.ChatCompletionTool = {
 				type: "function",
 				function: {
