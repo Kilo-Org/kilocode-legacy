@@ -164,6 +164,7 @@ describe("getMcpServerTools", () => {
 			properties: {
 				requiredField: { type: "string" },
 				optionalField: { type: "number" },
+				__save_to_file: { type: "boolean", description: "If true, saves full output to a file and returns only a reference." },
 			},
 			additionalProperties: false,
 			required: ["requiredField"],
@@ -192,6 +193,7 @@ describe("getMcpServerTools", () => {
 			type: "object",
 			properties: {
 				optionalField: { type: "string" },
+				__save_to_file: { type: "boolean", description: "If true, saves full output to a file and returns only a reference." },
 			},
 			additionalProperties: false,
 		})
