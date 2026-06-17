@@ -260,6 +260,42 @@ describe("FireworksHandler", () => {
 		expect(model.info).toEqual(expect.objectContaining(fireworksModels[testModelId]))
 	})
 
+	it("should return GLM 5.1 model with correct configuration", () => {
+		const testModelId: FireworksModelId = "accounts/fireworks/models/glm-5p1"
+		const handlerWithModel = new FireworksHandler({
+			apiModelId: testModelId,
+			fireworksApiKey: "test-fireworks-api-key",
+		})
+		const model = handlerWithModel.getModel()
+		expect(model.id).toBe(testModelId)
+		expect(model.info).toEqual(expect.objectContaining(fireworksModels[testModelId]))
+	})
+
+	it("should return GLM 5.2 model with correct configuration", () => {
+		const testModelId: FireworksModelId = "accounts/fireworks/models/glm-5p2"
+		const handlerWithModel = new FireworksHandler({
+			apiModelId: testModelId,
+			fireworksApiKey: "test-fireworks-api-key",
+		})
+		const model = handlerWithModel.getModel()
+		expect(model.id).toBe(testModelId)
+		expect(model.info).toEqual(
+			expect.objectContaining({
+				maxTokens: 131072,
+				contextWindow: 1000000,
+				supportsImages: false,
+				supportsPromptCache: true,
+				supportsMaxTokens: true,
+				supportsReasoningEffort: ["disable", "high", "max"],
+				reasoningEffort: "high",
+				preserveReasoning: true,
+				inputPrice: 1.4,
+				outputPrice: 4.4,
+				cacheReadsPrice: 0.26,
+			}),
+		)
+	})
+
 	it("should return Kimi K2.6 model with correct configuration", () => {
 		const testModelId: FireworksModelId = "accounts/fireworks/models/kimi-k2p6"
 		const handlerWithModel = new FireworksHandler({

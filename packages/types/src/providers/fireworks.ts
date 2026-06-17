@@ -20,6 +20,8 @@ export type FireworksModelId =
 	| "accounts/fireworks/models/glm-4p5-air"
 	| "accounts/fireworks/models/glm-4p6"
 	| "accounts/fireworks/models/glm-4p7"
+	| "accounts/fireworks/models/glm-5p1"
+	| "accounts/fireworks/models/glm-5p2"
 	| "accounts/fireworks/models/gpt-oss-20b"
 	| "accounts/fireworks/models/gpt-oss-120b"
 
@@ -248,6 +250,40 @@ export const fireworksModels = {
 		outputPrice: 2.2,
 		cacheReadsPrice: 0.3,
 		displayName: "GLM-4.7",
+	},
+	"accounts/fireworks/models/glm-5p1": {
+		maxTokens: 131072,
+		contextWindow: 202800,
+		supportsImages: false,
+		supportsPromptCache: true,
+		supportsNativeTools: true,
+		supportsReasoningEffort: ["disable", "high", "max"],
+		reasoningEffort: "high",
+		preserveReasoning: true,
+		inputPrice: 1.4,
+		outputPrice: 4.4,
+		cacheReadsPrice: 0.26,
+		displayName: "GLM 5.1",
+		description:
+			"GLM-5.1 is Zhipu's coding-focused model with built-in reasoning, 202k context, and dual thinking-effort modes (High/Max).",
+	},
+	"accounts/fireworks/models/glm-5p2": {
+		maxTokens: 131072,
+		contextWindow: 1000000,
+		supportsImages: false,
+		supportsPromptCache: true,
+		supportsNativeTools: true,
+		supportsMaxTokens: true,
+		supportsReasoningEffort: ["disable", "high", "max"],
+		reasoningEffort: "high",
+		preserveReasoning: true,
+		inputPrice: 1.4,
+		outputPrice: 4.4,
+		cacheWritesPrice: 0,
+		cacheReadsPrice: 0.26,
+		displayName: "GLM 5.2",
+		description:
+			"GLM-5.2 is Zhipu's flagship model with a 1M context window, 128k max output, and dual thinking-effort modes (High/Max). It delivers top-tier long-context reasoning, coding, and agentic performance.",
 	},
 	"accounts/fireworks/models/gpt-oss-20b": {
 		maxTokens: 128_000,
