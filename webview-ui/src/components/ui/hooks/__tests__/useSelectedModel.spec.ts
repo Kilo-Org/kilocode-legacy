@@ -11,6 +11,7 @@ import {
 	BEDROCK_1M_CONTEXT_MODEL_IDS,
 	litellmDefaultModelInfo,
 	openAiModelInfoSaneDefaults,
+	openAiNativeModels,
 	moonshotModels,
 } from "@roo-code/types"
 
@@ -825,8 +826,8 @@ describe("useSelectedModel", () => {
 		})
 	})
 
-		// kilocode_change start
-		describe("vertex provider", () => {
+	// kilocode_change start
+	describe("vertex provider", () => {
 		beforeEach(() => {
 			mockUseRouterModels.mockReturnValue({
 				data: {
@@ -861,10 +862,10 @@ describe("useSelectedModel", () => {
 			expect(result.current.id).toBe("claude-opus-4-6")
 			expect(result.current.info?.supportsImages).toBe(true)
 		})
-		})
-		// kilocode_change end
+	})
+	// kilocode_change end
 
-		describe("litellm provider", () => {
+	describe("litellm provider", () => {
 		beforeEach(() => {
 			mockUseOpenRouterModelProviders.mockReturnValue({
 				data: {},
@@ -1072,6 +1073,20 @@ describe("useSelectedModel", () => {
 				isLoading: false,
 				isError: false,
 			} as any)
+		})
+
+		it("should return GPT-5.5 metadata for OpenAI provider", () => {
+			const apiConfiguration: ProviderSettings = {
+				apiProvider: "openai-native",
+				apiModelId: "gpt-5.5",
+			}
+
+			const wrapper = createWrapper()
+			const { result } = renderHook(() => useSelectedModel(apiConfiguration), { wrapper })
+
+			expect(result.current.provider).toBe("openai-native")
+			expect(result.current.id).toBe("gpt-5.5")
+			expect(result.current.info).toEqual(openAiNativeModels["gpt-5.5"])
 		})
 
 		it("should use openAiModelInfoSaneDefaults when no custom model info is provided", () => {

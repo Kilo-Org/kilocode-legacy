@@ -77,6 +77,13 @@ export const OpenAi: ModelProvider = {
 		},
 		// gpt-5
 		{
+			model: "gpt-5.5",
+			displayName: "GPT-5.5",
+			contextLength: 1_000_000,
+			maxCompletionTokens: 128000,
+			recommendedFor: ["chat"],
+		},
+		{
 			model: "gpt-5",
 			displayName: "GPT-5",
 			contextLength: 400000,

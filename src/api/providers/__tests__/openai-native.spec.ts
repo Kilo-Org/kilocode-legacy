@@ -241,6 +241,30 @@ describe("OpenAiNativeHandler", () => {
 			expect(modelInfo.info.reasoningEffort).toBe("none")
 		})
 
+		it("should return GPT-5.5 model info when selected", () => {
+			const gpt55Handler = new OpenAiNativeHandler({
+				...mockOptions,
+				apiModelId: "gpt-5.5",
+			})
+
+			const modelInfo = gpt55Handler.getModel()
+			expect(modelInfo.id).toBe("gpt-5.5")
+			expect(modelInfo.info.maxTokens).toBe(128000)
+			expect(modelInfo.info.contextWindow).toBe(1_000_000)
+			expect(modelInfo.info.supportsNativeTools).toBe(true)
+			expect(modelInfo.info.supportsReasoningEffort).toEqual(["low", "medium", "high", "xhigh"])
+			expect(modelInfo.info.reasoningEffort).toBe("medium")
+			expect(modelInfo.info.inputPrice).toBe(5.0)
+			expect(modelInfo.info.outputPrice).toBe(30.0)
+			expect(modelInfo.info.cacheReadsPrice).toBe(0.5)
+			expect(modelInfo.info.longContextPricing).toEqual({
+				thresholdTokens: 272_000,
+				inputPriceMultiplier: 2,
+				outputPriceMultiplier: 1.5,
+				appliesToServiceTiers: ["default", "flex"],
+			})
+		})
+
 		it("should return GPT-5.3 Chat model info when selected", () => {
 			const chatHandler = new OpenAiNativeHandler({
 				...mockOptions,
@@ -438,6 +462,48 @@ describe("OpenAiNativeHandler", () => {
 			const textChunks = chunks.filter((chunk) => chunk.type === "text")
 			expect(textChunks).toHaveLength(1)
 			expect(textChunks[0].text).toBe("GPT-5.4 reply")
+		})
+
+		it("should handle GPT-5.5 model with Responses API", async () => {
+			const mockFetch = vitest.fn().mockResolvedValue({
+				ok: true,
+				body: new ReadableStream({
+					start(controller) {
+						controller.enqueue(
+							new TextEncoder().encode(
+								'data: {"type":"response.output_item.added","item":{"type":"text","text":"GPT-5.5 reply"}}\n\n',
+							),
+						)
+						controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"))
+						controller.close()
+					},
+				}),
+			})
+			global.fetch = mockFetch as any
+
+			mockResponsesCreate.mockRejectedValue(new Error("SDK not available"))
+
+			handler = new OpenAiNativeHandler({
+				...mockOptions,
+				apiModelId: "gpt-5.5",
+			})
+
+			const stream = handler.createMessage(systemPrompt, messages)
+			const chunks: any[] = []
+			for await (const chunk of stream) {
+				chunks.push(chunk)
+			}
+
+			const body = (mockFetch.mock.calls[0][1] as any).body as string
+			const parsedBody = JSON.parse(body)
+			expect(parsedBody.model).toBe("gpt-5.5")
+			expect(parsedBody.max_output_tokens).toBe(128000)
+			expect(parsedBody.temperature).toBeUndefined()
+			expect(parsedBody.reasoning?.effort).toBe("medium")
+
+			const textChunks = chunks.filter((chunk) => chunk.type === "text")
+			expect(textChunks).toHaveLength(1)
+			expect(textChunks[0].text).toBe("GPT-5.5 reply")
 		})
 
 		it("should handle GPT-5.3 Chat model with Responses API", async () => {
