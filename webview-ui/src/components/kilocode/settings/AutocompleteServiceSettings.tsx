@@ -13,6 +13,7 @@ import {
 	AutocompleteServiceSettings,
 	MODEL_SELECTION_ENABLED,
 } from "@roo-code/types"
+import { buildDocLink } from "@/utils/docLinks"
 import { vscode } from "@/utils/vscode"
 import { VSCodeCheckbox, VSCodeButton, VSCodeDropdown, VSCodeOption } from "@vscode/webview-ui-toolkit/react"
 import { useKeybindings } from "@/hooks/useKeybindings"
@@ -308,7 +309,7 @@ export const AutocompleteServiceSettingsView = ({
 									</ul>
 									<div className="text-vscode-descriptionForeground">
 										<a
-											href="https://kilo.ai/docs/basic-usage/autocomplete"
+											href={buildDocLink("basic-usage/autocomplete", "autocomplete_settings")}
 											className="text-vscode-textLink-foreground hover:underline">
 											{t("kilocode:autocomplete.settings.noModelConfigured.learnMore")}
 										</a>

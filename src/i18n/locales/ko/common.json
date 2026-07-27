@@ -274,7 +274,7 @@
 	},
 	"docsLink": {
 		"label": "Docs",
-		"url": "https://kilo.ai/docs"
+		"url": "https://github.com/Kilo-Org/kilocode-legacy/blob/main/docs/legacy-ides/README.md"
 	},
 	"errorBoundary": {
 		"title": "오류",

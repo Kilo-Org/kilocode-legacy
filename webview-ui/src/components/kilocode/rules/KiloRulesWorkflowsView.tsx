@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 import { useTranslation } from "react-i18next"
 
+import { buildDocLink } from "@/utils/docLinks"
 import { vscode } from "@/utils/vscode"
 
 import RulesWorkflowsSection from "./RulesWorkflowsSection"
@@ -82,13 +83,13 @@ const KiloRulesWorkflowsView = ({ type }: KiloRulesWorkflowsViewProps) => {
 			<div className="text-xs text-[var(--vscode-descriptionForeground)] mb-4">
 				{isRules ? (
 					<DescriptionWithLink
-						href="https://kilo.ai/docs/advanced-usage/custom-rules"
+						href={buildDocLink("advanced-usage/custom-rules", "rules_settings")}
 						linkText={t("kilocode:docs")}>
 						{t("kilocode:rules.description.rules")}
 					</DescriptionWithLink>
 				) : (
 					<DescriptionWithLink
-						href="https://kilo.ai/docs/features/slash-commands/workflows"
+						href={buildDocLink("features/slash-commands/workflows", "workflows_settings")}
 						linkText={t("kilocode:docs")}>
 						{t("kilocode:rules.description.workflows")}{" "}
 						<span className="text-[var(--vscode-foreground)] font-bold">/workflow-name</span>{" "}

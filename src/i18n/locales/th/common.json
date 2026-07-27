@@ -270,7 +270,7 @@
 	},
 	"docsLink": {
 		"label": "เอกสาร",
-		"url": "https://kilo.ai/docs"
+		"url": "https://github.com/Kilo-Org/kilocode-legacy/blob/main/docs/legacy-ides/README.md"
 	},
 	"errorBoundary": {
 		"title": "ข้อผิดพลาด",
