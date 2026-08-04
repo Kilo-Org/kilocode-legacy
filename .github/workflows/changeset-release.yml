@@ -27,7 +27,7 @@ jobs:
                   ref: ${{ env.GIT_REF }}
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v6
               with:
                   version: ${{ env.PNPM_VERSION }}
 
