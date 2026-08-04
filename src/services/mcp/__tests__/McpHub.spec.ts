@@ -354,14 +354,12 @@ describe("McpHub", () => {
 	})
 
 	describe("File watcher cleanup", () => {
-		it("should clean up file watchers when server is disabled", async () => {
+		// File watcher autoreload has been disabled (was causing more issues than it solved).
+		// These tests verify that file watchers are NOT created for any servers.
+		it("should not create file watchers for enabled servers (autoreload disabled)", async () => {
 			// Get the mocked chokidar
 			const chokidar = (await import("chokidar")).default
-			const mockWatcher = {
-				on: vi.fn().mockReturnThis(),
-				close: vi.fn(),
-			}
-			vi.mocked(chokidar.watch).mockReturnValue(mockWatcher as any)
+			vi.mocked(chokidar.watch).mockClear()
 
 			// Mock StdioClientTransport
 			const stdioModule = await import("@modelcontextprotocol/sdk/client/stdio.js")
@@ -409,89 +407,8 @@ describe("McpHub", () => {
 			const mcpHub = new McpHub(mockProvider as ClineProvider)
 			await new Promise((resolve) => setTimeout(resolve, 100))
 
-			// Verify watcher was created
-			expect(chokidar.watch).toHaveBeenCalledWith(["/path/to/watch"], expect.any(Object))
-
-			// Now disable the server
-			await mcpHub.toggleServerDisabled("watcher-test-server", true)
-
-			// Verify watcher was closed
-			expect(mockWatcher.close).toHaveBeenCalled()
-		})
-
-		it("should clean up all file watchers when server is deleted", async () => {
-			// Get the mocked chokidar
-			const chokidar = (await import("chokidar")).default
-			const mockWatcher1 = {
-				on: vi.fn().mockReturnThis(),
-				close: vi.fn(),
-			}
-			const mockWatcher2 = {
-				on: vi.fn().mockReturnThis(),
-				close: vi.fn(),
-			}
-
-			// Return different watchers for different paths
-			let watcherIndex = 0
-			vi.mocked(chokidar.watch).mockImplementation(() => {
-				return (watcherIndex++ === 0 ? mockWatcher1 : mockWatcher2) as any
-			})
-
-			// Mock StdioClientTransport
-			const stdioModule = await import("@modelcontextprotocol/sdk/client/stdio.js")
-			const StdioClientTransport = stdioModule.StdioClientTransport as ReturnType<typeof vi.fn>
-
-			const mockTransport = {
-				start: vi.fn().mockResolvedValue(undefined),
-				close: vi.fn().mockResolvedValue(undefined),
-				stderr: {
-					on: vi.fn(),
-				},
-				onerror: null,
-				onclose: null,
-			}
-
-			StdioClientTransport.mockImplementation(() => mockTransport)
-
-			// Mock Client
-			const clientModule = await import("@modelcontextprotocol/sdk/client/index.js")
-			const Client = clientModule.Client as ReturnType<typeof vi.fn>
-
-			const mockClient = {
-				connect: vi.fn().mockResolvedValue(undefined),
-				close: vi.fn().mockResolvedValue(undefined),
-				getInstructions: vi.fn().mockReturnValue("test instructions"),
-				request: vi.fn().mockResolvedValue({ tools: [], resources: [], resourceTemplates: [] }),
-				getServerCapabilities: vi.fn().mockResolvedValue({ tools: {} }), // kilocode_change
-			}
-
-			Client.mockImplementation(() => mockClient)
-
-			// Create server with multiple watchPaths
-			vi.mocked(fs.readFile).mockResolvedValue(
-				JSON.stringify({
-					mcpServers: {
-						"multi-watcher-server": {
-							command: "node",
-							args: ["test.js", "build/index.js"], // This will create a watcher for build/index.js
-							watchPaths: ["/path/to/watch1", "/path/to/watch2"],
-						},
-					},
-				}),
-			)
-
-			const mcpHub = new McpHub(mockProvider as ClineProvider)
-			await new Promise((resolve) => setTimeout(resolve, 100))
-
-			// Verify watchers were created
-			expect(chokidar.watch).toHaveBeenCalled()
-
-			// Delete the connection (this should clean up all watchers)
-			await mcpHub.deleteConnection("multi-watcher-server")
-
-			// Verify all watchers were closed
-			expect(mockWatcher1.close).toHaveBeenCalled()
-			expect(mockWatcher2.close).toHaveBeenCalled()
+			// Verify no watcher was created (autoreload is disabled)
+			expect(chokidar.watch).not.toHaveBeenCalled()
 		})
 
 		it("should not create file watchers for disabled servers on initialization", async () => {

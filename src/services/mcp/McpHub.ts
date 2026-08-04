@@ -1144,8 +1144,8 @@ export class McpHub {
 			return
 		}
 
-		// Set up file watchers for enabled servers
-		this.setupFileWatcher(name, config, source)
+		// kilocode_change - File watchers for source changes disabled (was causing more issues than it solved)
+		// this.setupFileWatcher(name, config, source)
 
 		try {
 			const client = new Client(
@@ -1203,8 +1203,8 @@ export class McpHub {
 						this.appendErrorMessage(connection, error instanceof Error ? error.message : `${error}`)
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on error
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 
 				transport.onclose = async () => {
@@ -1213,8 +1213,8 @@ export class McpHub {
 						connection.server.status = "disconnected"
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on close
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 
 				// transport.stderr is only available after the process has been started. However we can't start it separately from the .connect() call because it also starts the transport. And we can't place this after the connect call since we need to capture the stderr stream before the connection is established, in order to capture errors during the connection process.
@@ -1274,8 +1274,8 @@ export class McpHub {
 						this.appendErrorMessage(connection, error instanceof Error ? error.message : `${error}`)
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on error
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 
 				transport.onclose = async () => {
@@ -1284,8 +1284,8 @@ export class McpHub {
 						connection.server.status = "disconnected"
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on close
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 			} else if (configInjected.type === "sse") {
 				// SSE connection
@@ -1336,8 +1336,8 @@ export class McpHub {
 						this.appendErrorMessage(connection, error instanceof Error ? error.message : `${error}`)
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on error
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 
 				transport.onclose = async () => {
@@ -1346,8 +1346,8 @@ export class McpHub {
 						connection.server.status = "disconnected"
 					}
 					await this.notifyWebviewOfServerChanges()
-					// kilocode_change - Schedule auto-reconnect on close
-					this.scheduleReconnect(name, source)
+					// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+					// this.scheduleReconnect(name, source)
 				}
 			} else {
 				// Should not happen if validateServerConfig is correct
@@ -1418,8 +1418,8 @@ export class McpHub {
 			connection.server.status = "connected"
 			connection.server.error = ""
 			connection.server.instructions = client.getInstructions()
-			// kilocode_change - Reset reconnect attempts on successful connection
-			this.resetReconnectAttempts(name, source)
+			// kilocode_change - Auto-reconnect disabled (was causing more issues than it solved)
+			// this.resetReconnectAttempts(name, source)
 
 			this.kiloNotificationService.connect(name, connection.client)
 
@@ -1766,10 +1766,10 @@ export class McpHub {
 			if (!currentConnection) {
 				// New server
 				try {
-					// Only setup file watcher for enabled servers
-					if (!validatedConfig.disabled) {
-						this.setupFileWatcher(name, validatedConfig, source)
-					}
+					// kilocode_change - File watchers for source changes disabled (was causing more issues than it solved)
+					// if (!validatedConfig.disabled) {
+					// 	this.setupFileWatcher(name, validatedConfig, source)
+					// }
 					await this.connectToServer(name, validatedConfig, source)
 				} catch (error) {
 					this.showErrorMessage(`Failed to connect to new MCP server ${name}`, error)
@@ -1787,10 +1787,10 @@ export class McpHub {
 			) {
 				// Existing server with changed config
 				try {
-					// Only setup file watcher for enabled servers
-					if (!validatedConfig.disabled) {
-						this.setupFileWatcher(name, validatedConfig, source)
-					}
+					// kilocode_change - File watchers for source changes disabled (was causing more issues than it solved)
+					// if (!validatedConfig.disabled) {
+					// 	this.setupFileWatcher(name, validatedConfig, source)
+					// }
 					await this.deleteConnection(name, source)
 					await this.connectToServer(name, validatedConfig, source)
 				} catch (error) {
