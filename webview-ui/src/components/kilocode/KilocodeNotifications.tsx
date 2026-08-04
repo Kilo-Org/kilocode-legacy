@@ -22,12 +22,17 @@ interface Notification {
 
 const USE_MODEL_BUTTON_LABEL = "Try model"
 
+// kilocode_change: Hardcoded notification ID that cannot be dismissed
+const HARDCODED_NOTIFICATION_ID = "kilo-new-extension-beta-march-11"
+
 export const KilocodeNotifications: React.FC = () => {
 	const { dismissedNotificationIds, currentApiConfigName, apiConfiguration } = useExtensionState()
 	const { provider, providerModels, isLoading, isError } = useProviderModels(apiConfiguration)
 	const [notifications, setNotifications] = useState<Notification[]>([])
 	const filteredNotifications = notifications.filter(
-		(notification) => !(dismissedNotificationIds || []).includes(notification.id),
+		(notification) =>
+			notification.id === HARDCODED_NOTIFICATION_ID ||
+			!(dismissedNotificationIds || []).includes(notification.id),
 	)
 	const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -117,12 +122,14 @@ export const KilocodeNotifications: React.FC = () => {
 			<div className="bg-vscode-editor-background border border-vscode-panel-border rounded-lg p-3 gap-3">
 				<div className="flex items-center justify-between">
 					<h3 className="font-medium text-vscode-foreground m-0">{currentNotification.title}</h3>
-					<button
-						onClick={() => dismissNotificationId(currentNotification.id)}
-						className="text-vscode-descriptionForeground hover:text-vscode-foreground p-1 cursor-pointer"
-						title="Dismiss notification">
-						<span className="codicon codicon-close"></span>
-					</button>
+					{currentNotification.id !== HARDCODED_NOTIFICATION_ID && (
+						<button
+							onClick={() => dismissNotificationId(currentNotification.id)}
+							className="text-vscode-descriptionForeground hover:text-vscode-foreground p-1 cursor-pointer"
+							title="Dismiss notification">
+							<span className="codicon codicon-close"></span>
+						</button>
+					)}
 				</div>
 
 				<p className="text-vscode-descriptionForeground">{currentNotification.message}</p>
