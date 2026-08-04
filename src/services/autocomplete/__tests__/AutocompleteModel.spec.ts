@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { AutocompleteModel } from "../AutocompleteModel"
 import { ProviderSettingsManager } from "../../../core/config/ProviderSettingsManager"
-import { AUTOCOMPLETE_PROVIDER_MODELS } from "../utils/kilocode-utils"
+import { AUTOCOMPLETE_PROVIDER_MODELS, resetBalanceCache } from "../utils/kilocode-utils"
 import * as apiIndex from "../../../api"
 import { TelemetryService } from "../../../../packages/telemetry/src/TelemetryService"
 
@@ -115,6 +115,7 @@ describe("AutocompleteModel", () => {
 		beforeEach(() => {
 			// Mock fetch globally for these tests
 			vi.stubGlobal("fetch", vi.fn())
+			resetBalanceCache()
 
 			// Mock TelemetryService
 			const mockTelemetryService = {
@@ -135,7 +136,7 @@ describe("AutocompleteModel", () => {
 			vi.restoreAllMocks()
 		})
 
-		it("should skip kilocode provider when balance is zero and use openrouter instead", async () => {
+		it("should use kilocode provider immediately when token is present, regardless of balance", async () => {
 			const profiles = [
 				{ id: "1", name: "kilocode-profile", apiProvider: "kilocode" },
 				{ id: "2", name: "openrouter-profile", apiProvider: "openrouter" },
@@ -168,7 +169,7 @@ describe("AutocompleteModel", () => {
 				if (url.includes("/api/profile/balance")) {
 					return {
 						ok: true,
-						json: async () => ({ data: { balance: 0 } }),
+						json: async () => ({ balance: 0 }),
 					} as any
 				}
 				// For OpenRouter models endpoint
@@ -188,7 +189,7 @@ describe("AutocompleteModel", () => {
 			const model = new AutocompleteModel()
 			const result = await model.reload(mockProviderSettingsManager)
 
-			// Should have tried both providers but used openrouter (since kilocode balance is 0)
+			// Should use kilocode immediately without waiting for balance check
 			expect(result).toBe(true)
 			expect(model.loaded).toBe(true)
 		})
@@ -226,7 +227,7 @@ describe("AutocompleteModel", () => {
 				if (url.includes("/api/profile/balance")) {
 					return {
 						ok: true,
-						json: async () => ({ data: { balance: 10.5 } }),
+						json: async () => ({ balance: 10.5 }),
 					} as any
 				}
 				// For OpenRouter models endpoint
@@ -246,7 +247,7 @@ describe("AutocompleteModel", () => {
 			const model = new AutocompleteModel()
 			const result = await model.reload(mockProviderSettingsManager)
 
-			// Should have used kilocode provider (first one with positive balance)
+			// Should have used kilocode provider
 			expect(result).toBe(true)
 			expect(model.loaded).toBe(true)
 		})
@@ -310,7 +311,7 @@ describe("AutocompleteModel", () => {
 			expect(model.loaded).toBe(true)
 		})
 
-		it("should set hasKilocodeProfileWithNoBalance when kilocode profile exists but has no balance", async () => {
+		it("should set hasKilocodeProfileWithNoBalance asynchronously when balance is zero", async () => {
 			const profiles = [{ id: "1", name: "kilocode-profile", apiProvider: "kilocode" }] as any
 
 			vi.mocked(mockProviderSettingsManager.listConfig).mockResolvedValue(profiles)
@@ -323,12 +324,28 @@ describe("AutocompleteModel", () => {
 				kilocodeToken: "test-token",
 			} as any)
 
-			// Mock fetch to return zero balance for kilocode
+			// Mock fetch to return zero balance for kilocode and valid models response
 			;(global.fetch as any).mockImplementation(async (url: string) => {
 				if (url.includes("/api/profile/balance")) {
 					return {
 						ok: true,
 						json: async () => ({ balance: 0 }),
+					} as any
+				}
+				// For OpenRouter/Kilocode models endpoint
+				if (url.includes("/models")) {
+					return {
+						ok: true,
+						json: async () => ({
+							data: [
+								{
+									id: "mistralai/codestral-2508",
+									name: "Codestral",
+									context_length: 32000,
+									pricing: { prompt: "0.0001", completion: "0.0003" },
+								},
+							],
+						}),
 					} as any
 				}
 				return {
@@ -340,11 +357,14 @@ describe("AutocompleteModel", () => {
 			const model = new AutocompleteModel()
 			const result = await model.reload(mockProviderSettingsManager)
 
-			// Should not find a usable provider
-			expect(result).toBe(false)
+			// Provider is used immediately (no blocking on balance)
+			expect(result).toBe(true)
 			expect(model.loaded).toBe(true)
-			// Should have set the flag indicating kilocode profile exists but has no balance
-			expect(model.hasKilocodeProfileWithNoBalance).toBe(true)
+
+			// Wait for the background balance check to complete
+			await vi.waitFor(() => {
+				expect(model.hasKilocodeProfileWithNoBalance).toBe(true)
+			})
 		})
 
 		it("should not set hasKilocodeProfileWithNoBalance when kilocode profile has balance", async () => {
@@ -396,7 +416,10 @@ describe("AutocompleteModel", () => {
 			// Should find a usable provider
 			expect(result).toBe(true)
 			expect(model.loaded).toBe(true)
-			// Should not have set the flag
+
+			// Wait for background balance check and verify flag is not set
+			// Use a small delay to let the background promise resolve
+			await new Promise((resolve) => setTimeout(resolve, 10))
 			expect(model.hasKilocodeProfileWithNoBalance).toBe(false)
 		})
 
@@ -429,9 +452,14 @@ describe("AutocompleteModel", () => {
 
 			const model = new AutocompleteModel()
 			await model.reload(mockProviderSettingsManager)
-			expect(model.hasKilocodeProfileWithNoBalance).toBe(true)
+
+			// Wait for background balance check
+			await vi.waitFor(() => {
+				expect(model.hasKilocodeProfileWithNoBalance).toBe(true)
+			})
 
 			// Second reload: positive balance with valid models response
+			resetBalanceCache()
 			;(global.fetch as any).mockImplementation(async (url: string) => {
 				if (url.includes("/api/profile/balance")) {
 					return {
@@ -462,7 +490,8 @@ describe("AutocompleteModel", () => {
 			})
 
 			await model.reload(mockProviderSettingsManager)
-			// Flag should be cleared after reload with positive balance
+			// Flag should be cleared by cleanup() at start of reload
+			// (before background check potentially sets it again)
 			expect(model.hasKilocodeProfileWithNoBalance).toBe(false)
 		})
 	})

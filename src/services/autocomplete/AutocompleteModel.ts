@@ -5,7 +5,7 @@ import { ProviderSettingsManager } from "../../core/config/ProviderSettingsManag
 import { OpenRouterHandler } from "../../api/providers"
 import { CompletionUsage } from "../../api/providers/openrouter"
 import { ApiStreamChunk } from "../../api/transform/stream"
-import { AUTOCOMPLETE_PROVIDER_MODELS, checkKilocodeBalance } from "./utils/kilocode-utils"
+import { AUTOCOMPLETE_PROVIDER_MODELS, checkKilocodeBalanceCached } from "./utils/kilocode-utils"
 import { KilocodeOpenrouterHandler } from "../../api/providers/kilocode-openrouter"
 import { PROVIDERS } from "../../../webview-ui/src/components/settings/constants"
 import { ResponseMetaData } from "./types"
@@ -70,12 +70,17 @@ export class AutocompleteModel {
 			if (provider === "kilocode") {
 				// For all other providers, assume they are usable
 				if (!profile.kilocodeToken) continue
-				const hasBalance = await checkKilocodeBalance(profile.kilocodeToken, profile.kilocodeOrganizationId)
-				if (!hasBalance) {
-					// Track that we found a kilocode profile but it has no balance
-					this.hasKilocodeProfileWithNoBalance = true
-					continue
-				}
+				// Use the kilocode provider immediately without blocking on a balance check.
+				// A few requests with no balance are acceptable — the API will return errors
+				// which are handled gracefully. We check balance in the background for the
+				// status bar UI only.
+				void checkKilocodeBalanceCached(profile.kilocodeToken, profile.kilocodeOrganizationId).then(
+					(hasBalance) => {
+						if (!hasBalance) {
+							this.hasKilocodeProfileWithNoBalance = true
+						}
+					},
+				)
 			}
 			await useProfile(this, { ...profile, [modelIdKeysByProvider[provider]]: model }, provider)
 			return true
